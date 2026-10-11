@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Detective G2 - 100 Missions with Student Tracking & Google Sheets Sync</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <!-- Canvas Confetti for Celebrations -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&family=Prompt:wght@400;600;700&display=swap');
+    
+    :root {
+      --font-body: 'Nunito', 'Prompt', -apple-system, sans-serif;
+      --font-game: 'Fredoka', cursive, sans-serif;
+    }
+
+    body {
+      font-family: var(--font-body);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      background: radial-gradient(circle at 12% 18%, #f0fdf4 0%, #eff6ff 30%, #fffbeb 70%, #fdf4ff 100%);
+      min-height: 100vh;
+      font-size: 18px;
+    }
+
+    .font-game {
+      --font-game: 'Fredoka', cursive, sans-serif;
+      font-family: var(--font-game);
+    }
+
+    /* 3D Chunky Toy Buttons */
+    .btn-3d {
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 6px 0 rgba(0, 0, 0, 0.14), 0 10px 20px rgba(0, 0, 0, 0.08);
+      position: relative;
+    }
+    .btn-3d:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 rgba(0, 0, 0, 0.14), 0 14px 24px rgba(0, 0, 0, 0.12);
+    }
+    .btn-3d:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.16), 0 4px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    .card-3d {
+      box-shadow: 0 14px 35px -10px rgba(16, 185, 129, 0.15), 0 4px 14px -2px rgba(0, 0, 0, 0.05);
+      border: 3.5px solid rgba(255, 255, 255, 0.95);
+    }
+
+    .bubble-float {
+      animation: floatSlow 4s ease-in-out infinite;
+    }
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-7px) rotate(1.5deg); }
+    }
+
+    .bounce-wiggle {
+      animation: bounceWiggle 2.5s infinite ease-in-out;
+    }
+    @keyframes bounceWiggle {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      20% { transform: scale(1.08) rotate(-3deg); }
+      40% { transform: scale(1.08) rotate(3deg); }
+      60% { transform: scale(1.04) rotate(-1deg); }
+      80% { transform: scale(1) rotate(0deg); }
+    }
+
+    .speaking-pulse {
+      animation: speakPulse 1.2s infinite ease-in-out;
+    }
+    @keyframes speakPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+      50% { box-shadow: 0 0 0 14px rgba(16, 185, 129, 0); }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      height: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen text-slate-800">
+
+  <!-- TOP APP BAR -->
+  <header class="bg-white/95 backdrop-blur-md border-b-2 border-emerald-100/90 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      
+      <!-- Logo & Student Profile Info -->
+      <div class="flex items-center space-x-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-500 text-white flex items-center justify-center font-bold text-3xl shadow-lg shadow-emerald-200/60 transform -rotate-3 hover:rotate-3 transition">
+          🦁
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-black text-slate-900 font-game tracking-wide">
+              Math Detective G2
+            </h1>
+            <span class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm">
+              Stateful
+            </span>
+          </div>
+          <!-- Clickable Student Name Badge -->
+          <div class="flex items-center gap-1.5 mt-0.5">
+            <span class="text-xs font-extrabold text-slate-500">Student:</span>
+            <button id="btn-edit-student" class="text-xs font-black text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-lg flex items-center gap-1 transition" title="Click to Change Student Name">
+              <span id="display-student-name">Nephew</span>
+              <span class="text-[10px]">✏️</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls & Quick Scoreboard -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Interactive Report Card & Sheets Sync Button -->
+        <button id="btn-open-matrix" class="flex items-center gap-1.5 bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-300 hover:border-indigo-400 px-3.5 py-1.5 rounded-2xl shadow-sm text-xs sm:text-sm font-black text-indigo-900 transition active:scale-95" title="View Nephew Diagnostic Report & Google Sheets Sync">
+          <span class="text-base">📊</span>
+          <span class="hidden sm:inline">Scoring Matrix</span>
+          <span id="header-score-badge" class="bg-indigo-600 text-white text-xs px-2 py-0.5 rounded-full ml-1 font-bold">0/100</span>
+        </button>
+
+        <!-- 3-in-a-row Mastery Badge -->
+        <div class="flex items-center bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 px-3 py-1.5 rounded-2xl shadow-sm">
+          <span class="mr-1 text-lg">⭐</span>
+          <span id="streak-indicator" class="text-xs sm:text-sm font-black text-amber-800 bg-white px-2 py-0.5 rounded-full border border-amber-200">
+            0/3
+          </span>
+        </div>
+
+        <!-- Audio Toggle Button -->
+        <button id="btn-sound" class="w-10 h-10 rounded-2xl bg-white border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 flex items-center justify-center text-lg transition shadow-sm active:scale-95" title="Mute / Unmute Sound Effects">
+          🔊
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-5xl w-full mx-auto px-3 sm:px-4 py-4 flex flex-col gap-4">
+
+    <!-- UNIT SELECTOR TABS -->
+    <div class="flex items-center justify-start sm:justify-center space-x-2 overflow-x-auto pb-1 pt-0.5 px-1">
+      <button class="unit-tab flex-shrink-0 px-4 py-2 rounded-2xl text-xs sm:text-sm font-black transition-all bg-emerald-600 text-white shadow-md shadow-emerald-300/60" data-unit="all">
+        🌟 All 100 Missions
+      </button>
+      <button class="unit-tab flex-shrink-0 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-white text-slate-700 border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50" data-unit="1">
+        📦 1. Numbers to 1,000
+      </button>
+      <button class="unit-tab flex-shrink-0 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-white text-slate-700 border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50" data-unit="2">
+        ➕ 2. 3-Digit Add &amp; Sub
+      </button>
+      <button class="unit-tab flex-shrink-0 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-white text-slate-700 border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50" data-unit="3">
+        ✖️ 3. Multiplication &amp; Div
+      </button>
+      <button class="unit-tab flex-shrink-0 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-white text-slate-700 border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50" data-unit="4">
+        ⚖️ 4. m, cm, kg, g, L
+      </button>
+      <button class="unit-tab flex-shrink-0 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-white text-slate-700 border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50" data-unit="5">
+        🍕 5. Fractions &amp; Shapes
+      </button>
+      <button class="unit-tab flex-shrink-0 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-white text-slate-700 border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50" data-unit="6">
+        ⏰ 6. Time, Money &amp; Graphs
+      </button>
+      <button class="unit-tab flex-shrink-0 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-white text-slate-700 border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50" data-unit="7">
+        🎯 7. Multi-Step Challenges
+      </button>
+    </div>
+
+    <!-- QUESTION NAVIGATION & STEPPER BAR -->
+    <div class="bg-white/95 rounded-2xl p-3 border-2 border-emerald-100 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+      <div class="flex items-center gap-2">
+        <button id="btn-prev-q" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-800 font-black text-sm transition flex items-center gap-1">
+          <span>⬅</span> <span>Previous</span>
+        </button>
+        <button id="btn-next-q" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-sm transition flex items-center gap-1 shadow-sm">
+          <span>Next</span> <span>➡</span>
+        </button>
+      </div>
+
+      <!-- Jump to Question Selector -->
+      <div class="flex items-center gap-2">
+        <span class="text-xs sm:text-sm font-black text-slate-700">Question:</span>
+        <select id="question-select" class="bg-emerald-50 border-2 border-emerald-300 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-400">
+          <!-- 100 options injected dynamically -->
+        </select>
+        <button id="btn-random-q" class="px-3.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs sm:text-sm transition flex items-center gap-1 border border-amber-300">
+          <span>🎲</span> <span>Random</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- MISSION CONTEXT CARD (ENLARGED FONTS & DUAL VOICE-OVER BUTTONS) -->
+    <div class="bg-white/95 rounded-3xl p-5 sm:p-6 card-3d relative overflow-hidden">
+      <!-- Ambient Glows -->
+      <div class="absolute -right-10 -bottom-10 w-44 h-44 bg-emerald-100/60 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="absolute -left-10 -top-10 w-40 h-40 bg-teal-100/60 rounded-full blur-3xl pointer-events-none"></div>
+
+      <div class="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        
+        <!-- Story Info -->
+        <div class="flex items-start gap-4 flex-1">
+          <!-- Mascot Icon -->
+          <div id="mascot-avatar" class="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-emerald-400 via-teal-400 to-amber-300 border-4 border-white shadow-xl flex items-center justify-center text-4xl sm:text-5xl flex-shrink-0 bubble-float">
+            🦁
+          </div>
+          
+          <div class="flex-1">
+            <div class="flex flex-wrap items-center gap-2 mb-1.5">
+              <span id="pisa-badge" class="px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-amber-400 to-orange-400 text-white shadow-sm">
+                PISA Context
+              </span>
+              <span id="unit-badge" class="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-900 border border-emerald-200">
+                Question 1 of 100 • Grade 2
+              </span>
+              <span id="difficulty-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                Easy
+              </span>
+            </div>
+            
+            <!-- English Story Title & Body -->
+            <h2 id="story-title" class="text-xl sm:text-2xl font-black text-slate-900 font-game leading-tight tracking-wide">
+              Grandpa's Fruit Harvest
+            </h2>
+            <p id="story-desc" class="text-base sm:text-lg text-slate-700 mt-2 leading-relaxed font-bold">
+              Grandpa collected 3 hundreds, 4 tens, and 8 ones of sweet mangoes from the orchard.
+            </p>
+
+            <!-- Thai Translation Subtitle Box -->
+            <div id="thai-translation-box" class="mt-3 p-3 bg-amber-50/80 border border-amber-200 rounded-2xl text-xs sm:text-sm text-amber-950 font-semibold flex items-start gap-2">
+              <span class="text-base">🇹🇭</span>
+              <div class="flex-1">
+                <span id="thai-story-text" class="text-amber-900">คุณตาเก็บมะม่วงหวานจากสวนได้ 3 ร้อย 4 สิบ กับอีก 8 หน่วย</span>
+                <div id="thai-question-text" class="font-bold text-amber-950 mt-1">คำถาม: รวมแล้วคุณตาเก็บมะม่วงได้ทั้งหมดกี่ผล?</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- DUAL VOICE-OVER BUTTONS (ENGLISH + THAI) -->
+        <div class="w-full sm:w-auto flex flex-col sm:flex-col gap-2.5 justify-end">
+          
+          <!-- English Audio Button -->
+          <button id="btn-read-en" class="btn-3d flex items-center justify-center gap-2 text-xs sm:text-sm font-black text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 border-2 border-indigo-400 px-4 py-2.5 rounded-2xl transition shadow-md w-full">
+            <span id="audio-icon-en" class="text-lg">🔊</span>
+            <span id="audio-text-en">Listen in English</span>
+          </button>
+
+          <!-- Thai Audio Button -->
+          <button id="btn-read-th" class="btn-3d flex items-center justify-center gap-2 text-xs sm:text-sm font-black text-slate-900 bg-gradient-to-r from-amber-300 via-amber-400 to-orange-300 hover:from-amber-200 hover:to-orange-200 border-2 border-amber-400 px-4 py-2.5 rounded-2xl transition shadow-md w-full">
+            <span id="audio-icon-th" class="text-lg">🇹🇭</span>
+            <span id="audio-text-th">ฟังภาษาไทย (Thai)</span>
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PLAYSTAGE: VISUAL MANIPULATIVES (NO EQUATIONS / SPOILERS!) -->
+    <div id="play-stage" class="flex-1 bg-white/95 rounded-3xl p-5 sm:p-7 card-3d flex flex-col justify-between min-h-[360px] relative">
+
+      <!-- Large Question Prompt Banner -->
+      <div class="text-center mb-4">
+        <span class="inline-block bg-emerald-50 border-2 border-emerald-200 text-emerald-950 text-base sm:text-xl font-black px-5 py-2 rounded-2xl shadow-inner">
+          🎯 <span id="question-prompt">Question: What is the total number of mangoes Grandpa harvested?</span>
+        </span>
+      </div>
+
+      <!-- DYNAMIC VISUAL MODELS (CLEAN & SPOILER-FREE) -->
+      <div id="game-interactive-area" class="w-full flex-1 flex flex-col items-center justify-center py-3">
+        <!-- Visual diagram injected here WITHOUT equations -->
+      </div>
+
+      <!-- EXTRA LARGE 3D CHOICES BUTTONS -->
+      <div class="mt-6 pt-4 border-t-2 border-slate-100">
+        <div id="choices-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+          <!-- Choice buttons inserted here -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FOOTER COACH WITH TOGGLEABLE HINT -->
+    <div class="bg-gradient-to-r from-emerald-50 via-white to-teal-50 border-2 border-emerald-200 rounded-3xl p-4 shadow-sm flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 flex-1">
+        <div class="w-11 h-11 rounded-2xl bg-amber-400 text-white flex items-center justify-center text-2xl flex-shrink-0 shadow-md">
+          💡
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center gap-2">
+            <span class="font-black text-slate-900 text-sm sm:text-base">Heuristic Coaching:</span>
+            <!-- Hint Toggle Button -->
+            <button id="btn-toggle-hint" class="text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2.5 py-1 rounded-xl transition">
+              Show Hint
+            </button>
+          </div>
+          <!-- Hidden by default for real assessment -->
+          <div id="hint-content" class="hidden text-slate-700 font-bold text-xs sm:text-sm mt-1">
+            <span id="hint-text">Think about the place value units (Hundreds, Tens, and Ones).</span>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-next-question" class="hidden btn-3d flex-shrink-0 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-sm sm:text-base rounded-2xl transition active:scale-95 flex items-center gap-2 shadow-lg shadow-emerald-200">
+        <span>Next Mission</span>
+        <span class="text-xl">➔</span>
+      </button>
+    </div>
+
+  </main>
+
+  <!-- MODAL 1: STUDENT PROFILE NAME MODAL -->
+  <div id="student-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full card-3d border-4 border-emerald-300 relative shadow-2xl">
+      <div class="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner">
+        👤
+      </div>
+      <h3 class="text-xl font-black text-slate-900 font-game text-center mb-1">
+        Student Assessment Profile
+      </h3>
+      <p class="text-xs sm:text-sm text-slate-500 text-center mb-4 font-semibold">
+        Enter your nephew's name to record his scores and sync his diagnostic results to Google Sheets.
+      </p>
+
+      <div class="space-y-3 mb-5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nephew / Student Name:</label>
+          <input id="input-student-name" type="text" placeholder="e.g., Alex / น้องกาย" class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 focus:border-emerald-500 focus:outline-none font-bold text-sm text-slate-800 bg-slate-50">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Grade Level:</label>
+          <input type="text" value="Grade 2 (Primary 2)" readonly class="w-full px-4 py-2 rounded-xl border border-slate-200 text-slate-500 text-xs font-bold bg-slate-100 cursor-not-allowed">
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button id="btn-save-student" class="btn-3d flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-black transition shadow-md">
+          Save &amp; Continue
+        </button>
+        <button id="btn-cancel-student" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: COMPREHENSIVE SCORING MATRIX & GOOGLE SHEETS SYNC -->
+  <div id="matrix-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-3xl w-full card-3d border-4 border-indigo-300 relative shadow-2xl my-6">
+      
+      <!-- Close Button -->
+      <button id="btn-close-matrix" class="absolute top-5 right-5 w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center text-lg transition">
+        ✕
+      </button>
+
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-2xl shadow-md">
+          📋
+        </div>
+        <div>
+          <h2 class="text-xl sm:text-2xl font-black text-indigo-950 font-game">
+            Diagnostic Scoring Matrix &amp; Google Sheets Sync
+          </h2>
+          <p class="text-xs sm:text-sm text-slate-500 font-bold">
+            Evaluation for: <span id="matrix-student-label" class="text-indigo-900 font-extrabold underline">Nephew</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Current Performance Snapshot Card -->
+      <div class="bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-2xl p-4 mb-5 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Overall Score</div>
+          <div class="text-3xl font-black text-indigo-950 font-game">
+            <span id="matrix-score-val">0</span> / 100 
+            <span id="matrix-percent-val" class="text-lg font-bold text-indigo-600">(0%)</span>
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Mastery Tier</div>
+          <div id="matrix-tier-badge" class="px-3.5 py-1 rounded-full text-xs sm:text-sm font-black bg-slate-100 text-slate-700 border border-slate-300">
+            Ready to Start Diagnostic
+          </div>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Questions Answered</div>
+          <div id="matrix-answered-count" class="text-xl font-black text-slate-800">
+            0 / 100
+          </div>
+        </div>
+      </div>
+
+      <!-- GOOGLE SHEETS ACTIONS (EXPORT & SYNC BOX) -->
+      <div class="bg-emerald-50/90 border-2 border-emerald-300 rounded-2xl p-4 mb-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
+          <div>
+            <div class="text-sm font-black text-emerald-950 flex items-center gap-1.5">
+              <span>📊</span> Google Sheets Integration &amp; Export
+            </div>
+            <p class="text-xs text-emerald-800 font-semibold mt-0.5">
+              Save your nephew's assessment record to the Google Sheets tracking template.
+            </p>
+          </div>
+          <!-- Link to Sheet -->
+          <a href="https://docs.google.com/spreadsheets/d/1_7-3ArC4J_M5Pqx08XoQwLLlrsjX4FcHFKoYlXOm6HA/edit" target="_blank" rel="noopener noreferrer" class="flex-shrink-0 text-xs font-extrabold text-emerald-800 hover:text-emerald-900 bg-white border border-emerald-300 px-3 py-1.5 rounded-xl shadow-sm flex items-center gap-1">
+            <span>🔗 Open Google Sheet</span>
+            <span>↗</span>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <!-- Action 1: Copy Tab-Delimited Row -->
+          <button id="btn-copy-sheet-row" class="btn-3d py-2.5 px-3 bg-white hover:bg-emerald-100 border-2 border-emerald-400 text-emerald-950 text-xs sm:text-sm font-black rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm">
+            <span>📋</span>
+            <span>Copy Row (Paste Ctrl+V into Sheet)</span>
+          </button>
+
+          <!-- Action 2: Download CSV -->
+          <button id="btn-download-csv" class="btn-3d py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-black rounded-xl transition flex items-center justify-center gap-1.5 shadow-sm">
+            <span>📥</span>
+            <span>Download CSV for Google Sheets</span>
+          </button>
+        </div>
+
+        <!-- Optional Automated Webhook Field -->
+        <div class="mt-3 pt-3 border-t border-emerald-200">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold text-emerald-900">Optional Real-time Webhook URL:</span>
+            <button id="btn-toggle-webhook" class="text-[11px] font-black text-emerald-700 underline">Configure Webhook</button>
+          </div>
+          <div id="webhook-config-box" class="hidden mt-2 space-y-1.5">
+            <div class="flex gap-2">
+              <input id="input-webhook-url" type="url" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 px-3 py-1.5 rounded-lg border border-emerald-300 text-xs font-mono bg-white">
+              <button id="btn-send-webhook" class="px-3 py-1.5 bg-emerald-700 text-white font-bold text-xs rounded-lg">Sync</button>
+            </div>
+            <p class="text-[10px] text-emerald-700">Paste your Google Apps Script Web App URL to append rows automatically on each test.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mastery Benchmark Table -->
+      <div class="mb-5">
+        <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <span>🏆</span> 4-Tier Assessment Rubric
+        </h3>
+        <div class="overflow-x-auto rounded-2xl border-2 border-slate-200">
+          <table class="w-full text-left text-xs sm:text-sm">
+            <thead class="bg-slate-100 text-slate-800 font-black border-b border-slate-200">
+              <tr>
+                <th class="p-2.5">Score</th>
+                <th class="p-2.5">Tier</th>
+                <th class="p-2.5">Performance Diagnostic</th>
+                <th class="p-2.5">Recommendation</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 text-slate-700 font-semibold">
+              <tr class="hover:bg-slate-50">
+                <td class="p-2.5 font-bold text-emerald-700">90-100%</td>
+                <td class="p-2.5 font-black text-emerald-800">Advanced Mastery</td>
+                <td class="p-2.5">Flawless 3-digit operations, bar modeling &amp; non-routine logic.</td>
+                <td class="p-2.5">Exempt from drills; advance to Grade 3 Bar Models.</td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="p-2.5 font-bold text-blue-700">75-89%</td>
+                <td class="p-2.5 font-black text-blue-800">Proficient (Ready)</td>
+                <td class="p-2.5">Solid core foundation; minor slips on 2-step reasoning or units.</td>
+                <td class="p-2.5">Targeted review only on missed heuristic types.</td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="p-2.5 font-bold text-amber-700">60-74%</td>
+                <td class="p-2.5 font-black text-amber-800">Developing</td>
+                <td class="p-2.5">Solves 1-step problems, but struggles to draw bar models.</td>
+                <td class="p-2.5">Revisit Pictorial phase before number calculation.</td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="p-2.5 font-bold text-rose-700">&lt;60%</td>
+                <td class="p-2.5 font-black text-rose-800">Foundational Review</td>
+                <td class="p-2.5">Gaps in place value (hundreds/tens/ones) or regrouping.</td>
+                <td class="p-2.5">Reinforce Grade 1 Number Bonds &amp; Ten-Frames first.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Unit-by-Unit Accuracy Matrix -->
+      <div class="mb-5">
+        <h3 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <span>📚</span> Unit Mastery Breakdown
+        </h3>
+        <div id="unit-breakdown-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="mt-5 flex justify-end gap-3">
+        <button id="btn-reset-progress" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+          Reset Progress
+        </button>
+        <button id="btn-close-matrix-footer" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm transition shadow-md">
+          Close Report
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CELEBRATION / MASTERY POPUP -->
+  <div id="mastery-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full card-3d text-center border-4 border-amber-300 relative overflow-hidden shadow-2xl">
+      <div class="relative z-10">
+        <div class="w-20 h-20 bg-gradient-to-tr from-amber-400 to-yellow-300 rounded-3xl flex items-center justify-center text-5xl mx-auto mb-3 shadow-xl shadow-amber-300/60 bounce-wiggle border-4 border-white">
+          👑
+        </div>
+        
+        <h3 class="text-2xl sm:text-3xl font-black text-slate-900 font-game mb-1">
+          Mastery Fast-Track Reached!
+        </h3>
+        <p class="text-sm sm:text-base text-slate-600 mb-4 font-bold">
+          Your nephew answered 3 questions in a row correctly! Conceptual mastery is verified.
+        </p>
+
+        <!-- Mastery Concept Card -->
+        <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 rounded-2xl p-4 mb-5 text-left text-sm text-slate-900 space-y-2 shadow-inner">
+          <div class="font-black flex items-center gap-2 text-emerald-950 text-base">
+            <span>🧠</span> Mastered Competency:
+          </div>
+          <p id="mastery-concept-desc" class="text-slate-800 pl-4 border-l-4 border-emerald-500 leading-relaxed font-bold">
+            • Place value and mathematical reasoning.
+          </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button id="btn-continue-level" class="btn-3d flex-1 py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-2xl text-base font-black transition shadow-lg shadow-emerald-200 flex items-center justify-center gap-2">
+            <span>Next Level</span>
+            <span>🚀</span>
+          </button>
+          <button id="btn-replay-practice" class="py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-sm font-black transition">
+            Continue Current
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IN-PAGE TOAST NOTIFICATION -->
+  <div id="toast-msg" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900/90 text-white text-sm font-bold px-5 py-2.5 rounded-full shadow-xl pointer-events-none transition-all duration-300 opacity-0 z-50">
+  </div>
+
+  <!-- SCRIPT ENGINE -->
+  <script>
+    const ALL_QUESTIONS = [{"num": 1, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Personal", "title": "Grandpa's Fruit Harvest", "story": "Grandpa collected 3 hundreds, 4 tens, and 8 ones of sweet mangoes from the orchard.", "question": "What is the total number of mangoes Grandpa harvested?", "ans": "348", "short_ans": "348 mangoes", "equation": "300 + 40 + 8 = 348", "heuristic": "Place Value (Hundreds, Tens, Ones): 3 hundreds (300) + 4 tens (40) + 8 ones (8) = 348.", "difficulty": "Easy", "choices": ["350", "448", "338", "348"], "title_th": "เก็บผลมะม่วงในสวนคุณตา", "story_th": "คุณตาเก็บมะม่วงหวานจากสวนได้ 3 ร้อย 4 สิบ กับอีก 8 หน่วย", "question_th": "รวมแล้วคุณตาเก็บมะม่วงได้ทั้งหมดกี่ผล?"}, {"num": 2, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "School", "title": "Library Inventory", "story": "The school library catalog shows 400 English fiction books, 50 science encyclopedias, and 2 poetry books.", "question": "Write the expanded form as a single 3-digit number.", "ans": "452", "short_ans": "452 books", "equation": "400 + 50 + 2 = 452", "heuristic": "Combining hundreds, tens, and ones: 400 + 50 + 2 = 452.", "difficulty": "Easy", "choices": ["552", "472", "452", "453"], "title_th": "สำรวจหนังสือในห้องสมุด", "story_th": "ในระบบห้องสมุดมีหนังสือนิทานภาษาอังกฤษ 400 เล่ม สารานุกรม 50 เล่ม และกวีนิพนธ์ 2 เล่ม", "question_th": "รวมแล้วมีหนังสือทั้งหมดกี่เล่ม?"}, {"num": 3, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Personal", "title": "Toy Car Race Track", "story": "On the toy race track, Car Blue traveled 275 centimeters and Car Red traveled 257 centimeters.", "question": "Which car traveled farther, and by how many centimeters?", "ans": "Car Blue, by 18 cm", "short_ans": "Car Blue by 18 cm", "equation": "275 > 257; 275 - 257 = 18 cm", "heuristic": "Comparing 3-digit numbers by tens place (7 tens vs 5 tens): 275 is greater than 257 by 275 - 257 = 18.", "difficulty": "Easy", "choices": ["28 Blue, by 18 cm", "8 Blue, by 18 cm", "20 Blue, by 18 cm", "Car Blue, by 18 cm"], "title_th": "แข่งรถของเล่นบนราง", "story_th": "รถของเล่นคันสีน้ำเงินแล่นได้ 275 เซนติเมตร ส่วนคันสีแดงแล่นได้ 257 เซนติเมตร", "question_th": "รถคันไหนแล่นได้ไกลกว่า และไกลกว่ากี่เซนติเมตร?"}, {"num": 4, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Scientific", "title": "Bird Sanctuary Population", "story": "Sanctuary Alpha protects 680 birds. Sanctuary Beta protects 608 birds.", "question": "Which sanctuary has more birds, and what is the difference?", "ans": "Sanctuary Alpha, by 72 birds", "short_ans": "Alpha by 72", "equation": "680 - 608 = 72 birds", "heuristic": "Compare tens: 8 tens (80) vs 0 tens (0). 680 - 608 = 72 birds.", "difficulty": "Easy", "choices": ["52 Alpha, by 72 birds", "71 Alpha, by 72 birds", "172 Alpha, by 72 birds", "Sanctuary Alpha, by 72 birds"], "title_th": "สำรวจนกในเขตอนุรักษ์", "story_th": "เขตอนุรักษ์ ก มีนก 680 ตัว เขตอนุรักษ์ ข มีนก 608 ตัว", "question_th": "เขตอนุรักษ์ใดมีนกมากกว่า และต่างกันกี่ตัว?"}, {"num": 5, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Personal", "title": "Baking Cupcakes Order", "story": "A bakery received an order for 500 cupcakes. The kitchen already packed 320 cupcakes in boxes.", "question": "How many more cupcakes must the bakers make to complete the order?", "ans": "180", "short_ans": "180 cupcakes", "equation": "500 - 320 = 180", "heuristic": "Part-Whole Model: Whole = 500, Part = 320. Missing Part = 500 - 320 = 180.", "difficulty": "Easy", "choices": ["80", "160", "180", "280"], "title_th": "อบคัพเค้กตามออเดอร์", "story_th": "ร้านเบเกอรี่ได้รับคำสั่งซื้อคัพเค้ก 500 ชิ้น คนทำขนมแพ็กใส่กล่องไปแล้ว 320 ชิ้น", "question_th": "ต้องทำคัพเค้กเพิ่มอีกกี่ชิ้นจึงจะครบตามคำสั่งซื้อ?"}, {"num": 6, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "School", "title": "Recycled Paper Campaign", "story": "Grade 2A collected 100 sheets of paper in each of 7 boxes, plus 45 loose sheets.", "question": "How many recycled sheets did Grade 2A gather in total?", "ans": "745", "short_ans": "745 sheets", "equation": "7 x 100 + 45 = 745", "heuristic": "7 hundreds = 700. 700 + 45 = 745 sheets.", "difficulty": "Easy", "choices": ["750", "725", "743", "745"], "title_th": "โครงการรวบรวมกระดาษรีไซเคิล", "story_th": "นักเรียนชั้น ป.2/1 เก็บรวบรวมกระดาษใส่กล่อง กล่องละ 100 แผ่น ได้ 7 กล่อง และมีเศษอีก 45 แผ่น", "question_th": "รวมมีกระดาษรีไซเคิลทั้งหมดกี่แผ่น?"}, {"num": 7, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Personal", "title": "Savings Bank Count", "story": "Maya counted 8 hundred-dollar bills, 0 ten-dollar bills, and 9 one-dollar coins in her college fund jar.", "question": "What is the total dollar value inside Maya's jar?", "ans": "$809", "short_ans": "$809", "equation": "800 + 0 + 9 = 809", "heuristic": "Understanding zero as a placeholder in the tens place: 809.", "difficulty": "Easy", "choices": ["$909", "$811", "$809", "$829"], "title_th": "นับเงินในกระปุกออมสิน", "story_th": "มายานับเงินในกระปุก มีธนบัตรหนึ่งร้อยดอลลาร์ 8 ใบ ไม่มีธนบัตรสิบดอลลาร์ และมีเหรียญหนึ่งดอลลาร์ 9 เหรียญ", "question_th": "ในกระปุกของมายามีเงินทั้งหมดกี่ดอลลาร์?"}, {"num": 8, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "School", "title": "Sports Day T-Shirts", "story": "The sports committee ordered 360 green shirts and 390 yellow shirts.", "question": "How many more yellow shirts than green shirts were ordered?", "ans": "30", "short_ans": "30 shirts", "equation": "390 - 360 = 30", "heuristic": "Comparison: 390 - 360 = 30 shirts.", "difficulty": "Easy", "choices": ["25", "29", "32", "30"], "title_th": "สั่งเสื้อกีฬาสี", "story_th": "คณะกรรมการกีฬาสีสั่งเสื้อทีมสีเขียว 360 ตัว และเสื้อทีมสีเหลือง 390 ตัว", "question_th": "สั่งเสื้อสีเหลืองมากกว่าเสื้อสีเขียวกี่ตัว?"}, {"num": 9, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Scientific", "title": "Garden Plant Height", "story": "Bamboo stalk A is 815 mm tall. Bamboo stalk B is 851 mm tall.", "question": "Which stalk is taller, and what is the difference in height?", "ans": "Stalk B, by 36 mm", "short_ans": "Stalk B by 36 mm", "equation": "851 - 815 = 36 mm", "heuristic": "Compare tens: 5 tens (50) is greater than 1 ten (10). 851 - 815 = 36 mm.", "difficulty": "Medium", "choices": ["56 B, by 36 mm", "35 B, by 36 mm", "34 B, by 36 mm", "Stalk B, by 36 mm"], "title_th": "วัดความสูงต้นไผ่", "story_th": "ต้นไผ่ต้นที่หนึ่งสูง 815 มิลลิเมตร ต้นที่สองสูง 851 มิลลิเมตร", "question_th": "ต้นไผ่ต้นไหนสูงกว่า และสูงกว่ากี่มิลลิเมตร?"}, {"num": 10, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Personal", "title": "Board Game Steps", "story": "In a math adventure game, Oliver has 430 points. He needs 1,000 points to unlock the wizard castle.", "question": "How many points is Oliver missing?", "ans": "570", "short_ans": "570 points", "equation": "1000 - 430 = 570", "heuristic": "Number bond to 1,000: 430 + 570 = 1,000.", "difficulty": "Medium", "choices": ["565", "670", "569", "570"], "title_th": "เก็บแต้มในเกมคณิตศาสตร์", "story_th": "โอลิเวอร์มีแต้มสะสม 430 แต้ม เขาต้องการสะสมให้ครบ 1,000 แต้มเพื่อปลดล็อกปราสาท", "question_th": "โอลิเวอร์ยังขาดแต้มอีกกี่แต้ม?"}, {"num": 11, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "School", "title": "Concert Hall Seats", "story": "An auditorium has 650 seats. 250 seats are in the balcony and the rest are on the main floor.", "question": "How many seats are on the main floor?", "ans": "400", "short_ans": "400 seats", "equation": "650 - 250 = 400", "heuristic": "Part-Whole: 650 - 250 = 400 seats.", "difficulty": "Medium", "choices": ["380", "390", "405", "400"], "title_th": "เก้าอี้ในหอประชุม", "story_th": "หอประชุมโรงเรียนมีที่นั่งทั้งหมด 650 ที่นั่ง โดยเป็นที่นั่งชั้นลอย 250 ที่นั่ง ที่เหลือเป็นชั้นล่าง", "question_th": "มีที่นั่งชั้นล่างกี่ที่นั่ง?"}, {"num": 12, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Personal", "title": "Sticker Album Collection", "story": "An album holds 900 stickers. Leo has pasted 760 stickers so far.", "question": "How many empty slots remain in Leo's album?", "ans": "140", "short_ans": "140 slots", "equation": "900 - 760 = 140", "heuristic": "Number bond: 760 + 140 = 900.", "difficulty": "Medium", "choices": ["140", "40", "150", "141"], "title_th": "สมุดสะสมสติกเกอร์", "story_th": "สมุดสะสมจุสติกเกอร์ได้ 900 ดวง ลีโอติดสติกเกอร์ไปแล้ว 760 ดวง", "question_th": "ยังเหลือช่องว่างที่ยังไม่ได้ติดสติกเกอร์อีกกี่ช่อง?"}, {"num": 13, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Scientific", "title": "Butterfly Migration Distances", "story": "Monarch Group A flew 620 miles. Monarch Group B flew 590 miles.", "question": "How many more miles did Group A fly than Group B?", "ans": "30", "short_ans": "30 miles", "equation": "620 - 590 = 30", "heuristic": "Mental math / counting on: 590 + 10 = 600, + 20 = 620 -> 30 miles.", "difficulty": "Medium", "choices": ["29", "32", "20", "30"], "title_th": "การอพยพของผีเสื้อ", "story_th": "ผีเสื้อฝูงแรกบินได้ระยะทาง 620 ไมล์ ผีเสื้อฝูงที่สองบินได้ 590 ไมล์", "question_th": "ผีเสื้อฝูงแรกบินได้ไกลกว่าฝูงที่สองกี่ไมล์?"}, {"num": 14, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "School", "title": "Crayon Factory Packets", "story": "A factory box holds 1,000 crayons. There are 850 crayons currently packed inside.", "question": "How many more crayons can fit into the factory box?", "ans": "150", "short_ans": "150 crayons", "equation": "1000 - 850 = 150", "heuristic": "Make 1,000: 850 + 50 = 900, + 100 = 1,000 -> 150 crayons.", "difficulty": "Medium", "choices": ["50", "150", "250", "152"], "title_th": "บรรจุสีเทียนในโรงงาน", "story_th": "กล่องใหญ่ของโรงงานจุสีเทียนได้ 1,000 แท่ง ตอนนี้บรรจุสีเทียนไปแล้ว 850 แท่ง", "question_th": "ยังบรรจุสีเทียนเพิ่มได้อีกกี่แท่งจึงจะเต็มกล่อง?"}, {"num": 15, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Personal", "title": "Marathon Bib Numbers", "story": "Runner Kelly wears bib number 499. The runner right behind her wears the next consecutive number.", "question": "What is the bib number of the runner behind Kelly?", "ans": "500", "short_ans": "500", "equation": "499 + 1 = 500", "heuristic": "Successor number across the hundreds boundary: 499 + 1 = 500.", "difficulty": "Medium", "choices": ["600", "502", "500", "495"], "title_th": "เบอร์วิ่งมาราธอน", "story_th": "เคลลี่ติดเบอร์วิ่งหมายเลข 499 นักวิ่งที่วิ่งตามหลังเธอติดเบอร์ลำดับถัดไป", "question_th": "นักวิ่งคนหลังติดเบอร์หมายเลขใด?"}, {"num": 16, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Scientific", "title": "Deep Sea Submarine Depth", "story": "Submarine Alpha dived to 700 meters. Submarine Beta dived 100 meters deeper than Alpha.", "question": "How deep did Submarine Beta dive?", "ans": "800 meters", "short_ans": "800 m", "equation": "700 + 100 = 800", "heuristic": "Adding hundreds: 700 + 100 = 800 meters.", "difficulty": "Medium", "choices": ["780 meters", "799 meters", "801 meters", "800 meters"], "title_th": "ดำดิ่งสู่ใต้ทะเลลึก", "story_th": "เรือดำน้ำลำแรกดำลงไปลึก 700 เมตร ลำที่สองดำลึกกว่าลำแรก 100 เมตร", "question_th": "เรือดำน้ำลำที่สองดำลงไปลึกกี่เมตร?"}, {"num": 17, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "School", "title": "Charity Can Drive", "story": "The second grade collected 420 cans of soup on Monday and 380 cans on Tuesday.", "question": "How many cans did they collect in total over both days?", "ans": "800", "short_ans": "800 cans", "equation": "420 + 380 = 800", "heuristic": "Making a hundred: 420 + 80 = 500, + 300 = 800 cans.", "difficulty": "Medium", "choices": ["820", "700", "790", "800"], "title_th": "รับบริจาคอาหารกระป๋อง", "story_th": "นักเรียน ป.2 รวบรวมปลากระป๋องได้ 420 กระป๋องในวันจันทร์ และ 380 กระป๋องในวันอังคาร", "question_th": "รวมทั้งสองวันรวบรวมปลากระป๋องได้ทั้งหมดกี่กระป๋อง?"}, {"num": 18, "unit": 1, "unitTitle": "Numbers to 1,000 & Place Value", "pisa": "Personal", "title": "Train Mileage Journey", "story": "Train 1 traveled 345 km. Train 2 traveled 100 km less than Train 1.", "question": "How far did Train 2 travel?", "ans": "245 km", "short_ans": "245 km", "equation": "345 - 100 = 245", "heuristic": "Subtracting 1 hundred from 345: 245 km.", "difficulty": "Medium", "choices": ["245 km", "235 km", "345 km", "240 km"], "title_th": "ระยะทางของรถไฟ", "story_th": "รถไฟขบวนแรกวิ่งได้ระยะทาง 345 กิโลเมตร ขบวนที่สองวิ่งได้น้อยกว่าขบวนแรก 100 กิโลเมตร", "question_th": "รถไฟขบวนที่สองวิ่งได้ระยะทางกี่กิโลเมตร?"}, {"num": 19, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "School", "title": "School Cafeteria Lunches", "story": "The cafeteria cooked 358 chicken meals and 267 vegetarian pasta meals on Wednesday.", "question": "How many meals did the cafeteria prepare in total?", "ans": "625", "short_ans": "625 meals", "equation": "358 + 267 = 625", "heuristic": "Addition with regrouping across ones and tens: 8+7=15 (carry 1), 5+6+1=12 (carry 1), 3+2+1=6 -> 625.", "difficulty": "Medium", "choices": ["625", "725", "623", "626"], "title_th": "อาหารกลางวันในโรงอาหาร", "story_th": "แม่ครัวทำอาหารกล่องไก่ 358 กล่อง และอาหารมังสวิรัติ 267 กล่อง", "question_th": "แม่ครัวเตรียมอาหารกลางวันรวมทั้งหมดกี่กล่อง?"}, {"num": 20, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Personal", "title": "Weekend Family Road Trip", "story": "The Johnson family drove 284 miles on Saturday and 359 miles on Sunday.", "question": "What was the total distance driven over the weekend?", "ans": "643 miles", "short_ans": "643 miles", "equation": "284 + 359 = 643", "heuristic": "Regrouping: 4+9=13 (carry 1 ten), 8+5+1=14 (carry 1 hundred), 2+3+1=6 -> 643 miles.", "difficulty": "Medium", "choices": ["643 miles", "648 miles", "633 miles", "663 miles"], "title_th": "ขับรถเที่ยวสุดสัปดาห์", "story_th": "ครอบครัวจอห์นสันขับรถ 284 ไมล์ในวันเสาร์ และ 359 ไมล์ในวันอาทิตย์", "question_th": "รวมระยะทางที่ขับรถตลอดสุดสัปดาห์คือกี่ไมล์?"}, {"num": 21, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "School", "title": "Book Fair Sales", "story": "The elementary book fair had 512 picture books. By Friday afternoon, students bought 285 books.", "question": "How many picture books are left unsold?", "ans": "227", "short_ans": "227 books", "equation": "512 - 285 = 227", "heuristic": "Subtraction with double regrouping: Regroup tens for ones (12-5=7), regroup hundreds for tens (10-8=2), 4-2=2 -> 227 books.", "difficulty": "Medium", "choices": ["327", "226", "217", "227"], "title_th": "งานสัปดาห์หนังสือ", "story_th": "ในงานหนังสือมีหนังสือนิทาน 512 เล่ม วันศุกร์มีคนซื้อไป 285 เล่ม", "question_th": "เหลือหนังสือนิทานกี่เล่ม?"}, {"num": 22, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Personal", "title": "Amusement Park Visitors", "story": "On Saturday, 804 people entered the water park. 347 of them were adults, and the rest were children.", "question": "How many children entered the water park on Saturday?", "ans": "457", "short_ans": "457 children", "equation": "804 - 347 = 457", "heuristic": "Subtraction across zero in tens place: 804 becomes 7 hundreds, 9 tens, 14 ones. 14-7=7, 9-4=5, 7-3=4 -> 457 children.", "difficulty": "Medium", "choices": ["452", "457", "357", "467"], "title_th": "สวนสนุกสวนน้ำ", "story_th": "วันเสาร์มีผู้เข้าสวนน้ำ 804 คน เป็นผู้ใหญ่ 347 คน ที่เหลือเป็นเด็ก", "question_th": "มีเด็กเข้าสวนน้ำกี่คน?"}, {"num": 23, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Scientific", "title": "Zoo Animal Care", "story": "The city zoo fed 465 kg of hay to the elephants and 278 kg of hay to the zebras and giraffes.", "question": "How much hay was fed to these animals in total?", "ans": "743 kg", "short_ans": "743 kg", "equation": "465 + 278 = 743", "heuristic": "Part-Whole Model: 465 + 278 = 743 kg.", "difficulty": "Medium", "choices": ["744 kg", "748 kg", "745 kg", "743 kg"], "title_th": "ให้อาหารสัตว์ในสวนสัตว์", "story_th": "สวนสัตว์ให้อาหารหญ้าแก่ช้าง 465 กิโลกรัม และให้ม้าลายกับยีราฟ 278 กิโลกรัม", "question_th": "สวนสัตว์ใช้อาหารหญ้าไปทั้งหมดกี่กิโลกรัม?"}, {"num": 24, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Personal", "title": "Toy Store Inventory", "story": "A toy store had 620 jigsaw puzzles in stock. They sold 384 puzzles during a holiday sale.", "question": "How many puzzles remain on the store shelves?", "ans": "236", "short_ans": "236 puzzles", "equation": "620 - 384 = 236", "heuristic": "Subtraction with regrouping: 0 ones needs regrouping (10-4=6), 1 ten needs regrouping (11-8=3), 5-3=2 -> 236 puzzles.", "difficulty": "Medium", "choices": ["231", "236", "235", "238"], "title_th": "สต็อกกล่องตัวต่อจิ๊กซอว์", "story_th": "ร้านของเล่นมีจิ๊กซอว์ 620 กล่อง ขายไปได้ 384 กล่องในช่วงเทศกาล", "question_th": "ยังเหลือจิ๊กซอว์บนชั้นวางกี่กล่อง?"}, {"num": 25, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "School", "title": "School Garden Seedlings", "story": "Class 2B planted 196 marigold seeds and 248 sunflower seeds.", "question": "How many flower seeds did Class 2B plant altogether?", "ans": "444", "short_ans": "444 seeds", "equation": "196 + 248 = 444", "heuristic": "Mental math / compensation: 196 is 4 less than 200. 200 + 248 = 448; 448 - 4 = 444 seeds.", "difficulty": "Medium", "choices": ["444", "443", "445", "454"], "title_th": "เพาะเมล็ดพันธุ์ดอกไม้", "story_th": "นักเรียนชั้น ป.2/2 ปลูกเมล็ดดาวเรือง 196 เมล็ด และเมล็ดทานตะวัน 248 เมล็ด", "question_th": "นักเรียนปลูกเมล็ดดอกไม้รวมทั้งหมดกี่เมล็ด?"}, {"num": 26, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Personal", "title": "Bake Sale Earnings", "story": "The soccer team earned $415 at the morning bake sale and $289 at the afternoon match.", "question": "What was the soccer team's total earnings?", "ans": "$704", "short_ans": "$704", "equation": "415 + 289 = 704", "heuristic": "Vertical addition: 5+9=14, 1+8+1=10, 4+2+1=7 -> $704.", "difficulty": "Medium", "choices": ["$709", "$704", "$684", "$699"], "title_th": "ขายขนมหารายได้ทีมฟุตบอล", "story_th": "ทีมฟุตบอลขายขนมช่วงเช้าได้เงิน 415 ดอลลาร์ และช่วงบ่ายได้ 289 ดอลลาร์", "question_th": "ทีมฟุตบอลได้เงินรวมทั้งหมดกี่ดอลลาร์?"}, {"num": 27, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Scientific", "title": "Tree Planting Conservation", "story": "Volunteers aimed to plant 750 pine saplings. They have already planted 486 saplings.", "question": "How many saplings are left to plant?", "ans": "264", "short_ans": "264 saplings", "equation": "750 - 486 = 264", "heuristic": "Part-Whole Bar Model: Whole = 750, Part = 486. Missing part = 750 - 486 = 264.", "difficulty": "Medium", "choices": ["269", "364", "274", "264"], "title_th": "ปลูกป่าทดแทน", "story_th": "อาสาสมัครตั้งเป้าปลูกต้นสน 750 ต้น ขณะนี้ปลูกไปแล้ว 486 ต้น", "question_th": "ยังเหลือต้นสนที่ต้องปลูกอีกกี่ต้น?"}, {"num": 28, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Personal", "title": "Airplane Flight Mileage", "story": "A domestic flight covers 902 kilometers. The plane has flown 538 kilometers so far.", "question": "How many kilometers remain until the plane reaches its destination?", "ans": "364 km", "short_ans": "364 km", "equation": "902 - 538 = 364", "heuristic": "Subtracting across zero: 902 -> 8 hundreds, 9 tens, 12 ones. 12-8=4, 9-3=6, 8-5=3 -> 364 km.", "difficulty": "Medium", "choices": ["365 km", "362 km", "364 km", "354 km"], "title_th": "ระยะทางเที่ยวบินในประเทศ", "story_th": "เที่ยวบินระยะทาง 902 กิโลเมตร นักบินบินไปแล้ว 538 กิโลเมตร", "question_th": "เหลือกี่กิโลเมตรจึงจะถึงจุดหมาย?"}, {"num": 29, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "School", "title": "Art Exhibition Origami", "story": "The art club folded 375 blue cranes and 488 yellow cranes for the district exhibition.", "question": "How many cranes did the art club fold in total?", "ans": "863", "short_ans": "863 cranes", "equation": "375 + 488 = 863", "heuristic": "Adding with regrouping: 5+8=13, 7+8+1=16, 3+4+1=8 -> 863 cranes.", "difficulty": "Medium", "choices": ["865", "853", "863", "864"], "title_th": "พับนกกระเรียนจัดแสดง", "story_th": "ชมรมศิลปะพับนกกระเรียนสีฟ้า 375 ตัว และสีเหลือง 488 ตัว", "question_th": "รวมแล้วพับนกกระเรียนได้ทั้งหมดกี่ตัว?"}, {"num": 30, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Personal", "title": "Building Block Sets", "story": "Liam has a castle set with 645 blocks. His sister Emma has a pirate set with 288 blocks.", "question": "How many more blocks does Liam have than Emma?", "ans": "357", "short_ans": "357 blocks", "equation": "645 - 288 = 357", "heuristic": "Comparison Bar Model: 645 - 288 = 357 blocks.", "difficulty": "Medium", "choices": ["367", "355", "362", "357"], "title_th": "ตัวต่อบล็อกไม้สร้างปราสาท", "story_th": "เลียมมีตัวต่อ 645 ชิ้น เอมมามีตัวต่อ 288 ชิ้น", "question_th": "เลียมมีตัวต่อมากกว่าเอมมากี่ชิ้น?"}, {"num": 31, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Scientific", "title": "River Fish Population", "story": "Biologists tagged 523 trout in Spring. In Autumn, they counted 179 fewer trout in the same river section.", "question": "How many trout were counted in Autumn?", "ans": "344", "short_ans": "344 trout", "equation": "523 - 179 = 344", "heuristic": "Comparison model: 523 - 179 = 344 trout.", "difficulty": "Hard", "choices": ["339", "244", "344", "364"], "title_th": "สำรวจปลาในลำธาร", "story_th": "นักชีววิทยาติดแท็กปลาเทราต์ในฤดูใบไม้ผลิ 523 ตัว ในฤดูใบไม้ร่วงนับได้น้อยลง 179 ตัว", "question_th": "ในฤดูใบไม้ร่วงนับปลาได้กี่ตัว?"}, {"num": 32, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "School", "title": "Field Day Jump Rope", "story": "The Red Team jumped 436 times. The Blue Team jumped 175 more times than the Red Team.", "question": "How many times did the Blue Team jump?", "ans": "611", "short_ans": "611 jumps", "equation": "436 + 175 = 611", "heuristic": "Comparison Model (More Than): 436 + 175 = 611 jumps.", "difficulty": "Hard", "choices": ["611", "609", "612", "711"], "title_th": "แข่งกระโดดเชือกกีฬาสี", "story_th": "ทีมสีแดงกระโดดได้ 436 ครั้ง ทีมสีฟ้ากระโดดได้มากกว่าทีมสีแดง 175 ครั้ง", "question_th": "ทีมสีฟ้ากระโดดได้กี่ครั้ง?"}, {"num": 33, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Personal", "title": "Farmer's Market Apples", "story": "A farmer brought 830 kg of apples to market. By noon, 465 kg were sold to grocery stores.", "question": "How many kilograms of apples remain?", "ans": "365 kg", "short_ans": "365 kg", "equation": "830 - 465 = 365", "heuristic": "Subtraction: 830 - 465 = 365 kg.", "difficulty": "Hard", "choices": ["465 kg", "365 kg", "265 kg", "355 kg"], "title_th": "ขายแอปเปิลในตลาดเกษตร", "story_th": "ชาวสวนนำแอปเปิลมา 830 กิโลกรัม ถึงตอนเที่ยงขายไปได้ 465 กิโลกรัม", "question_th": "เหลือแอปเปิลกี่กิโลกรัม?"}, {"num": 34, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Personal", "title": "Movie Theater Tickets", "story": "A cinema sold 294 tickets for the morning show and 387 tickets for the evening show.", "question": "How many total cinema tickets were sold?", "ans": "681", "short_ans": "681 tickets", "equation": "294 + 387 = 681", "heuristic": "Addition with regrouping: 4+7=11, 9+8+1=18, 2+3+1=6 -> 681 tickets.", "difficulty": "Hard", "choices": ["676", "581", "681", "691"], "title_th": "ตั๋วชมภาพยนตร์", "story_th": "โรงภาพยนตร์ขายตั๋วรอบเช้าได้ 294 ใบ และรอบค่ำได้ 387 ใบ", "question_th": "ขายตั๋วภาพยนตร์รวมทั้งหมดกี่ใบ?"}, {"num": 35, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "School", "title": "Library Return Box", "story": "The library had 700 new fiction books. 246 books were loaned out in the first week.", "question": "How many new fiction books remain in the library?", "ans": "454", "short_ans": "454 books", "equation": "700 - 246 = 454", "heuristic": "Subtracting from multiples of 100: 700 - 246 = 454 books.", "difficulty": "Hard", "choices": ["554", "464", "454", "449"], "title_th": "ยืมหนังสือในห้องสมุด", "story_th": "ห้องสมุดมีหนังสือนวนิยายใหม่ 700 เล่ม สัปดาห์แรกมีนักเรียนยืมไป 246 เล่ม", "question_th": "ยังเหลือหนังสือนวนิยายอยู่ในห้องสมุดกี่เล่ม?"}, {"num": 36, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Scientific", "title": "Botanical Garden Roses", "story": "The garden has 318 white rose bushes and 495 pink rose bushes.", "question": "How many rose bushes are in the garden altogether?", "ans": "813", "short_ans": "813 bushes", "equation": "318 + 495 = 813", "heuristic": "318 + 495 = 313 + 500 = 813 bushes.", "difficulty": "Hard", "choices": ["833", "813", "811", "793"], "title_th": "แปลงกุหลาบในสวนพฤกษศาสตร์", "story_th": "ในสวนมีต้นกุหลาบสีขาว 318 ต้น และกุหลาบสีชมพู 495 ต้น", "question_th": "มีต้นกุหลาบในสวนรวมทั้งหมดกี่ต้น?"}, {"num": 37, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "Personal", "title": "Swimming Pool Lap Count", "story": "Noah set a goal to swim 500 laps this summer. He has swum 324 laps so far.", "question": "How many laps does Noah have left to reach his goal?", "ans": "176", "short_ans": "176 laps", "equation": "500 - 324 = 176", "heuristic": "Part-Whole Model: 500 - 324 = 176 laps.", "difficulty": "Hard", "choices": ["276", "171", "176", "174"], "title_th": "ตั้งเป้าว่ายน้ำในสระ", "story_th": "โนอาห์ตั้งเป้าว่ายน้ำ 500 รอบ ขณะนี้ว่ายไปได้ 324 รอบแล้ว", "question_th": "โนอาห์ต้องว่ายอีกกี่รอบจึงจะครบตามเป้า?"}, {"num": 38, "unit": 2, "unitTitle": "Addition & Subtraction within 1,000", "pisa": "School", "title": "Science Fair Participants", "story": "There are 247 girls and 189 boys participating in the regional elementary science fair.", "question": "What is the total number of student participants?", "ans": "436", "short_ans": "436 students", "equation": "247 + 189 = 436", "heuristic": "Addition with regrouping: 7+9=16, 4+8+1=13, 2+1+1=4 -> 436 students.", "difficulty": "Hard", "choices": ["426", "431", "438", "436"], "title_th": "งานแข่งขันโครงงานวิทยาศาสตร์", "story_th": "มีนักเรียนหญิงเข้าร่วม 247 คน และนักเรียนชาย 189 คน", "question_th": "มีนักเรียนเข้าร่วมแข่งขันทั้งหมดกี่คน?"}, {"num": 39, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "School", "title": "Art Class Paint Brushes", "story": "The art teacher arranges 6 cups on the craft table. Each cup contains exactly 5 paintbrushes.", "question": "How many paintbrushes are there in total?", "ans": "30", "short_ans": "30 brushes", "equation": "6 x 5 = 30", "heuristic": "Equal groups: 6 groups of 5 = 6 x 5 = 30 paintbrushes.", "difficulty": "Medium", "choices": ["30", "35", "31", "10"], "title_th": "จัดพู่กันในห้องศิลปะ", "story_th": "ครูศิลปะจัดแก้วน้ำ 6 ใบ แต่ละใบใส่พู่กัน 5 ด้าม", "question_th": "มีพู่กันรวมทั้งหมดกี่ด้าม?"}, {"num": 40, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Personal", "title": "Baking Muffin Trays", "story": "Grandma baked muffins in 4 trays. Each tray has 10 muffin cups.", "question": "How many muffins did Grandma bake in total?", "ans": "40", "short_ans": "40 muffins", "equation": "4 x 10 = 40", "heuristic": "Multiplication table of 10: 4 groups of 10 = 4 x 10 = 40 muffins.", "difficulty": "Medium", "choices": ["140", "35", "40", "38"], "title_th": "อบมัฟฟินใส่ถาด", "story_th": "คุณยายอบขนมมัฟฟิน 4 ถาด แต่ละถาดมี 10 ชิ้น", "question_th": "คุณยายอบมัฟฟินทั้งหมดกี่ชิ้น?"}, {"num": 41, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Personal", "title": "Sharing Apple Slices", "story": "A mother cuts 18 apple slices and shares them equally among her 3 children.", "question": "How many apple slices does each child receive?", "ans": "6", "short_ans": "6 slices", "equation": "18 / 3 = 6", "heuristic": "Equal sharing (Division): 18 divided into 3 equal shares = 18 / 3 = 6 slices per child.", "difficulty": "Medium", "choices": ["6", "7", "16", "8"], "title_th": "แบ่งชิ้นแอปเปิลให้ลูก", "story_th": "คุณแม่หั่นแอปเปิล 18 ชิ้น แบ่งให้ลูก 3 คน คนละเท่าๆ กัน", "question_th": "ลูกแต่ละคนจะได้แอปเปิลกี่ชิ้น?"}, {"num": 42, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "School", "title": "Seating at Science Tables", "story": "24 students are grouped equally around 4 lab tables for an experiment.", "question": "How many students sit at each lab table?", "ans": "6", "short_ans": "6 students", "equation": "24 / 4 = 6", "heuristic": "Division: 24 shared among 4 tables = 24 / 4 = 6 students.", "difficulty": "Medium", "choices": ["11", "8", "6", "5"], "title_th": "จัดโต๊ะทดลองวิทยาศาสตร์", "story_th": "นักเรียน 24 คน นั่งโต๊ะทดลอง 4 โต๊ะ โต๊ะละเท่าๆ กัน", "question_th": "แต่ละโต๊ะมีนักเรียนนั่งกี่คน?"}, {"num": 43, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Personal", "title": "Bicycle Wheels Count", "story": "There are 8 bicycles parked outside the community playground. Each bicycle has 2 wheels.", "question": "How many bicycle wheels are there altogether?", "ans": "16", "short_ans": "16 wheels", "equation": "8 x 2 = 16", "heuristic": "Multiplication table of 2: 8 groups of 2 = 8 x 2 = 16 wheels.", "difficulty": "Medium", "choices": ["36", "17", "26", "16"], "title_th": "นับล้อรถจักรยาน", "story_th": "มีรถจักรยานจอดอยู่ 8 คัน แต่ละคันมี 2 ล้อ", "question_th": "มีล้อรถจักรยานรวมทั้งหมดกี่ล้อ?"}, {"num": 44, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "School", "title": "Planting Flower Pots", "story": "The gardening club has 27 sunflower seeds. They plant 3 seeds in every pot.", "question": "How many pots do the students need?", "ans": "9", "short_ans": "9 pots", "equation": "27 / 3 = 9", "heuristic": "Grouping (Division): 27 seeds grouped into sets of 3 = 27 / 3 = 9 pots.", "difficulty": "Medium", "choices": ["4", "14", "9", "109"], "title_th": "ปลูกเมล็ดทานตะวันในกระถาง", "story_th": "มีเมล็ดทานตะวัน 27 เมล็ด ปลูกในกระถาง กระถางละ 3 เมล็ด", "question_th": "ต้องใช้กระถางทั้งหมดกี่ใบ?"}, {"num": 45, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Personal", "title": "Toy Cars on Shelves", "story": "Lucas arranges his toy sports cars on 7 shelves. He places 4 cars on each shelf.", "question": "How many toy sports cars does Lucas have in total?", "ans": "28", "short_ans": "28 cars", "equation": "7 x 4 = 28", "heuristic": "Multiplication table of 4: 7 groups of 4 = 7 x 4 = 28 cars.", "difficulty": "Medium", "choices": ["48", "28", "29", "33"], "title_th": "จัดรถของเล่นบนชั้นวาง", "story_th": "ลูคัสจัดรถของเล่นบนชั้น 7 ชั้น แต่ละชั้นวางรถ 4 คัน", "question_th": "ลูคัสมีรถของเล่นทั้งหมดกี่คัน?"}, {"num": 46, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "School", "title": "Classroom Pencil Packs", "story": "The teacher has 40 colored pencils and packs them into bundles of 5 pencils each.", "question": "How many bundles of pencils can the teacher make?", "ans": "8", "short_ans": "8 bundles", "equation": "40 / 5 = 8", "heuristic": "Division by 5: 40 / 5 = 8 bundles.", "difficulty": "Medium", "choices": ["10", "7", "8", "108"], "title_th": "จัดมัดดินสอสี", "story_th": "ครูมีดินสอสี 40 แท่ง มัดรวมกันมัดละ 5 แท่ง", "question_th": "ครูจัดดินสอสีได้ทั้งหมดกี่มัด?"}, {"num": 47, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Scientific", "title": "Insect Leg Counter", "story": "A science book shows pictures of 6 beetles. Each beetle has 6 legs (use 3 pairs of 2). In total, how many legs do 9 ants have if each ant has 6 legs? (Or for Grade 2: 9 spiders have 4 pairs of legs, or 7 insects have 3 pairs of legs). Let's use Grade 2 tables: A clover has 3 leaves. A student picks 8 clovers.", "question": "How many clover leaves are picked in total?", "ans": "24", "short_ans": "24 leaves", "equation": "8 x 3 = 24", "heuristic": "Multiplication table of 3: 8 groups of 3 = 8 x 3 = 24 leaves.", "difficulty": "Medium", "choices": ["25", "44", "14", "24"], "title_th": "นับใบโคลเวอร์", "story_th": "ใบโคลเวอร์ 1 ต้นมี 3 แฉก/ใบ ถ้านักเรียนเก็บใบโคลเวอร์มา 8 ต้น", "question_th": "จะมีใบโคลเวอร์รวมทั้งหมดกี่ใบ?"}, {"num": 48, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Personal", "title": "Egg Cartons Stacking", "story": "A farm shop sells eggs in cartons of 10. A restaurant buys 7 cartons.", "question": "How many eggs did the restaurant purchase?", "ans": "70", "short_ans": "70 eggs", "equation": "7 x 10 = 70", "heuristic": "Table of 10: 7 x 10 = 70 eggs.", "difficulty": "Medium", "choices": ["70", "90", "71", "60"], "title_th": "กล่องไข่ไก่ส่งร้านอาหาร", "story_th": "ร้านขายไข่แพ็กไข่ใส่กล่อง กล่องละ 10 ฟอง ร้านอาหารซื้อไป 7 กล่อง", "question_th": "ร้านอาหารได้ไข่ไก่ทั้งหมดกี่ฟอง?"}, {"num": 49, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "School", "title": "Jump Rope Relay Teams", "story": "32 students are divided into teams of 4 for a gym relay race.", "question": "How many teams are formed?", "ans": "8", "short_ans": "8 teams", "equation": "32 / 4 = 8", "heuristic": "Division: 32 / 4 = 8 teams.", "difficulty": "Hard", "choices": ["10", "28", "8", "7"], "title_th": "จัดทีมวิ่งผลัดกระโดดเชือก", "story_th": "นักเรียน 32 คน แบ่งเป็นทีม ทีมละ 4 คน", "question_th": "แบ่งได้ทั้งหมดกี่ทีม?"}, {"num": 50, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Personal", "title": "Cookie Sharing with Friends", "story": "Sophie baked 30 cookies and placed 5 cookies into each gift bag.", "question": "How many gift bags did Sophie prepare?", "ans": "6", "short_ans": "6 bags", "equation": "30 / 5 = 6", "heuristic": "Grouping division: 30 / 5 = 6 bags.", "difficulty": "Hard", "choices": ["5", "6", "7", "16"], "title_th": "จัดถุงคุกกี้ของขวัญ", "story_th": "โซฟีอบคุกกี้ 30 ชิ้น จัดใส่ถุง ถุงละ 5 ชิ้น", "question_th": "โซฟีจัดถุงของขวัญได้กี่ถุง?"}, {"num": 51, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "School", "title": "Library Bookmark Packs", "story": "The librarian gives each of 9 reading champions 4 decorative bookmarks.", "question": "How many bookmarks did the librarian distribute in total?", "ans": "36", "short_ans": "36 bookmarks", "equation": "9 x 4 = 36", "heuristic": "Table of 4: 9 x 4 = 36 bookmarks.", "difficulty": "Hard", "choices": ["38", "26", "36", "41"], "title_th": "แจกที่คั่นหนังสือให้นักเรียน", "story_th": "บรรณารักษ์แจกที่คั่นหนังสือให้นักเรียนยอดนักอ่าน 9 คน คนละ 4 อัน", "question_th": "บรรณารักษ์แจกที่คั่นหนังสือไปทั้งหมดกี่อัน?"}, {"num": 52, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Personal", "title": "Sticker Sheet Rows", "story": "A sheet of gold stars has 5 rows. Each row contains 8 stars.", "question": "How many gold stars are on the sheet?", "ans": "40", "short_ans": "40 stars", "equation": "5 x 8 = 40", "heuristic": "Array model: 5 rows of 8 = 5 x 8 = 40 stars.", "difficulty": "Hard", "choices": ["20", "41", "38", "40"], "title_th": "แถวสติกเกอร์รูปดาว", "story_th": "แผ่นสติกเกอร์มี 5 แถว แต่ละแถวมีดาว 8 ดวง", "question_th": "ในแผ่นสติกเกอร์มีดาวทั้งหมดกี่ดวง?"}, {"num": 53, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Scientific", "title": "Spider Leg Model", "story": "A scientist observes 5 toy spiders. Each spider has 8 legs (or for G2: 4 pairs of 2). Let's use table of 2: 10 pairs of shoes.", "question": "How many individual shoes are in 10 pairs?", "ans": "20", "short_ans": "20 shoes", "equation": "10 x 2 = 20", "heuristic": "Table of 2: 10 x 2 = 20 shoes.", "difficulty": "Hard", "choices": ["30", "10", "18", "20"], "title_th": "รองเท้า 10 คู่", "story_th": "ถ้าวางรองเท้า 10 คู่ จะมีรองเท้าทั้งหมดกี่ข้าง?", "question_th": "มีรองเท้าทั้งหมดกี่ข้าง?"}, {"num": 54, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "School", "title": "Desk Arrangement in Rows", "story": "A classroom has 3 rows of desks with 7 desks in each row.", "question": "How many desks are in the classroom?", "ans": "21", "short_ans": "21 desks", "equation": "3 x 7 = 21", "heuristic": "Array model: 3 x 7 = 21 desks.", "difficulty": "Hard", "choices": ["21", "22", "11", "121"], "title_th": "จัดโต๊ะเรียนในห้อง", "story_th": "ห้องเรียนจัดโต๊ะเป็น 3 แถว แถวละ 7 ตัว", "question_th": "ในห้องเรียนมีโต๊ะทั้งหมดกี่ตัว?"}, {"num": 55, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Personal", "title": "Sharing Marbles Equally", "story": "Two brothers share 18 game tokens equally.", "question": "How many tokens does each brother get?", "ans": "9", "short_ans": "9 tokens", "equation": "18 / 2 = 9", "heuristic": "Halving / Division by 2: 18 / 2 = 9 tokens.", "difficulty": "Hard", "choices": ["9", "7", "8", "10"], "title_th": "แบ่งเหรียญเกมเท่าๆ กัน", "story_th": "พี่น้องสองคนแบ่งเหรียญเกม 18 เหรียญเท่าๆ กัน", "question_th": "แต่ละคนจะได้เหรียญคนละกี่เหรียญ?"}, {"num": 56, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "School", "title": "Music Class Triangles", "story": "The music teacher has 21 rhythm sticks and hands 3 sticks to each performer.", "question": "How many performers receive rhythm sticks?", "ans": "7", "short_ans": "7 performers", "equation": "21 / 3 = 7", "heuristic": "Division by 3: 21 / 3 = 7 performers.", "difficulty": "Hard", "choices": ["7", "17", "12", "27"], "title_th": "ไม้เคาะจังหวะดนตรี", "story_th": "ครูดนตรีมีไม้เคาะจังหวะ 21 อัน แจกให้นักเรียนคนละ 3 อัน", "question_th": "มีนักเรียนได้รับไม้เคาะจังหวะกี่คน?"}, {"num": 57, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Personal", "title": "Donut Boxes", "story": "A bakery packs donuts into boxes of 4. A customer needs 36 donuts for an office party.", "question": "How many boxes must the customer order?", "ans": "9", "short_ans": "9 boxes", "equation": "36 / 4 = 9", "heuristic": "Division by 4: 36 / 4 = 9 boxes.", "difficulty": "Hard", "choices": ["9", "19", "7", "8"], "title_th": "สั่งกล่องโดนัทสำหรับงานเลี้ยง", "story_th": "ร้านเบเกอรี่แพ็กโดนัทกล่องละ 4 ชิ้น ลูกค้าต้องการ 36 ชิ้น", "question_th": "ลูกค้าต้องสั่งโดนัทกี่กล่อง?"}, {"num": 58, "unit": 3, "unitTitle": "Multiplication & Division Concepts", "pisa": "Scientific", "title": "Pet Hamster Feeding", "story": "A pet store owner feeds 50 sunflower seeds to 5 hamsters equally.", "question": "How many seeds does each hamster receive?", "ans": "10", "short_ans": "10 seeds", "equation": "50 / 5 = 10", "heuristic": "Division by 5: 50 / 5 = 10 seeds.", "difficulty": "Hard", "choices": ["8", "12", "5", "10"], "title_th": "ให้อาหารหนูแฮมสเตอร์", "story_th": "เจ้าของร้านสัตว์เลี้ยงแบ่งเมล็ดทานตะวัน 50 เมล็ด ให้หนูแฮมสเตอร์ 5 ตัวเท่าๆ กัน", "question_th": "หนูแต่ละตัวจะได้เมล็ดทานตะวันกี่เมล็ด?"}, {"num": 59, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "School", "title": "Whiteboard Measurement", "story": "The classroom whiteboard is 2 meters and 45 centimeters long.", "question": "What is the total length of the whiteboard in centimeters?", "ans": "245 cm", "short_ans": "245 cm", "equation": "2 m = 200 cm; 200 + 45 = 245 cm", "heuristic": "Conversion: 1 meter = 100 cm. 2 m 45 cm = 200 cm + 45 cm = 245 cm.", "difficulty": "Medium", "choices": ["245 cm", "250 cm", "345 cm", "145 cm"], "title_th": "วัดความยาวกระดานไวท์บอร์ด", "story_th": "กระดานไวท์บอร์ดในห้องเรียนยาว 2 เมตร 45 เซนติเมตร", "question_th": "กระดานไวท์บอร์ดยาวทั้งหมดกี่เซนติเมตร?"}, {"num": 60, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "Personal", "title": "Jump Rope Length", "story": "Emma's jump rope is 180 cm long. Lucas's jump rope is 2 m long.", "question": "Whose rope is longer, and by how many centimeters?", "ans": "Lucas's rope, by 20 cm", "short_ans": "Lucas by 20 cm", "equation": "2 m = 200 cm; 200 - 180 = 20 cm", "heuristic": "Convert 2 m to 200 cm. Comparison: 200 - 180 = 20 cm.", "difficulty": "Medium", "choices": ["18 rope, by 20 cm", "10 rope, by 20 cm", "Lucas's rope, by 20 cm", "22 rope, by 20 cm"], "title_th": "เปรียบเทียบเชือกกระโดด", "story_th": "เชือกกระโดดของเอมมายาว 180 ซม. ของลูคัสยาว 2 เมตร", "question_th": "เชือกของใครยาวกว่า และยาวกว่ากี่เซนติเมตร?"}, {"num": 61, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "Scientific", "title": "School Garden Hose", "story": "A green garden hose is 15 meters long. The gardener cuts off 6 meters to use for the nursery bed.", "question": "How long is the remaining garden hose?", "ans": "9 meters", "short_ans": "9 m", "equation": "15 - 6 = 9 m", "heuristic": "Length subtraction: 15 m - 6 m = 9 meters.", "difficulty": "Medium", "choices": ["9 meters", "109 meters", "4 meters", "19 meters"], "title_th": "ตัดสายยางรดน้ำ", "story_th": "สายยางยาว 15 เมตร คนสวนตัดไปใช้ 6 เมตร", "question_th": "เหลือสายยางยาวกี่เมตร?"}, {"num": 62, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "Personal", "title": "Baking Flour Bag", "story": "A baker has a 5 kg bag of wheat flour. She uses 2 kg 400 g to bake artisan sourdough loaves.", "question": "How much flour is left in the bag?", "ans": "2 kg 600 g (or 2,600 g)", "short_ans": "2 kg 600 g", "equation": "5,000 g - 2,400 g = 2,600 g", "heuristic": "Mass conversion: 5 kg = 5,000 g. 5,000 g - 2,400 g = 2,600 g (2 kg 600 g).", "difficulty": "Medium", "choices": ["102 kg 600 g (or 2,600 g)", "7 kg 600 g (or 2,600 g)", "1 kg 600 g (or 2,600 g)", "2 kg 600 g (or 2,600 g)"], "title_th": "ถุงแป้งทำขนมปัง", "story_th": "คนทำขนมมีแป้งสาลี 5 กิโลกรัม ใช้ทำขนมปังไป 2 กก. 400 กรัม", "question_th": "เหลือแป้งสาลีในถุงเท่าไร?"}, {"num": 63, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "School", "title": "Backpack Weigh-In", "story": "Daniel's school backpack weighs 3 kg 200 g. After removing his heavy dictionary, it weighs 2 kg 500 g.", "question": "What is the mass of the dictionary?", "ans": "700 grams", "short_ans": "700 g", "equation": "3,200 g - 2,500 g = 700 g", "heuristic": "Subtracting mass: 3,200 g - 2,500 g = 700 grams.", "difficulty": "Medium", "choices": ["710 grams", "680 grams", "699 grams", "700 grams"], "title_th": "ชั่งน้ำหนักกระเป๋านักเรียน", "story_th": "กระเป๋านักเรียนหนัก 3 กก. 200 กรัม เมื่อเอาพจนานุกรมออก หนัก 2 กก. 500 กรัม", "question_th": "พจนานุกรมหนักกี่กรัม?"}, {"num": 64, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "Personal", "title": "Water Dispenser Refill", "story": "A water cooler jug contains 18 liters of drinking water. During the office morning hours, 7 liters are consumed.", "question": "How much water remains in the jug?", "ans": "11 liters", "short_ans": "11 L", "equation": "18 - 7 = 11 L", "heuristic": "Volume subtraction: 18 L - 7 L = 11 liters.", "difficulty": "Medium", "choices": ["16 liters", "111 liters", "11 liters", "31 liters"], "title_th": "ถังน้ำดื่มในสำนักงาน", "story_th": "ถังน้ำดื่มจุน้ำ 18 ลิตร ในช่วงเช้ามีคนกดดื่มไป 7 ลิตร", "question_th": "เหลือน้ำในถังกี่ลิตร?"}, {"num": 65, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "Scientific", "title": "Aquarium Tank Volume", "story": "A turtle tank needs 45 liters of water to be full. It currently contains 28 liters.", "question": "How many more liters of water must be poured in?", "ans": "17 liters", "short_ans": "17 L", "equation": "45 - 28 = 17 L", "heuristic": "Volume difference: 45 - 28 = 17 liters.", "difficulty": "Medium", "choices": ["22 liters", "7 liters", "27 liters", "17 liters"], "title_th": "เติมน้ำใส่ตู้เลี้ยงเต่า", "story_th": "ตู้เต่าจุได้ 45 ลิตร ตอนนี้มีน้ำอยู่ 28 ลิตร", "question_th": "ต้องเทน้ำเพิ่มอีกกี่ลิตรจึงจะเต็ม?"}, {"num": 66, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "School", "title": "Craft Ribbon Project", "story": "Class 2A has 3 rolls of red ribbon. Each roll is 4 meters long.", "question": "What is the total length of red ribbon the class owns?", "ans": "12 meters", "short_ans": "12 m", "equation": "3 x 4 = 12 m", "heuristic": "Multiplication of length: 3 rolls x 4 m = 12 meters.", "difficulty": "Medium", "choices": ["12 meters", "11 meters", "17 meters", "112 meters"], "title_th": "ม้วนริบบิ้นทำงานประดิษฐ์", "story_th": "มีริบบิ้น 3 ม้วน แต่ละม้วนยาว 4 เมตร", "question_th": "มีริบบิ้นยาวรวมทั้งหมดกี่เมตร?"}, {"num": 67, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "Personal", "title": "Grocery Shopping Bag Weight", "story": "A mother's grocery tote contains 2 kg of rice, 1 kg of sugar, and 500 g of butter.", "question": "What is the total weight of the groceries in grams?", "ans": "3,500 grams", "short_ans": "3,500 g", "equation": "2,000 + 1,000 + 500 = 3,500 g", "heuristic": "Conversion to grams: 2 kg = 2,000 g, 1 kg = 1,000 g. 2,000 + 1,000 + 500 = 3,500 g.", "difficulty": "Hard", "choices": ["3,500 grams", "2 grams", "8 grams", "23 grams"], "title_th": "ชั่งของในถุงจ่ายตลาด", "story_th": "ในถุงมีข้าวสาร 2 กก. น้ำตาล 1 กก. และเนย 500 กรัม", "question_th": "สิ่งของในถุงหนักรวมกันกี่กรัม?"}, {"num": 68, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "Scientific", "title": "Rain Gauge Measurement", "story": "On Tuesday, the weather station recorded 34 mm of rainfall. On Wednesday, it recorded 48 mm.", "question": "What was the total rainfall over both days?", "ans": "82 mm", "short_ans": "82 mm", "equation": "34 + 48 = 82 mm", "heuristic": "Adding measurements: 34 + 48 = 82 mm.", "difficulty": "Hard", "choices": ["87 mm", "83 mm", "72 mm", "82 mm"], "title_th": "วัดปริมาณน้ำฝน", "story_th": "วันอังคารมีฝนตก 34 มม. วันพุธมีฝนตก 48 มม.", "question_th": "ปริมาณน้ำฝนรวมทั้งสองวันคือกี่มิลลิเมตร?"}, {"num": 69, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "Personal", "title": "Water Bottle Drink Capacity", "story": "Ethan drinks 2 liters of fresh water every day to stay hydrated during sports camp.", "question": "How many liters of water does Ethan drink in 1 full week (7 days)?", "ans": "14 liters", "short_ans": "14 L", "equation": "7 x 2 = 14 L", "heuristic": "Rate multiplication: 7 days x 2 L/day = 14 liters.", "difficulty": "Hard", "choices": ["114 liters", "16 liters", "14 liters", "12 liters"], "title_th": "ดื่มน้ำในค่ายกีฬา", "story_th": "อีธานดื่มน้ำวันละ 2 ลิตรทุกวัน ในเวลา 1 สัปดาห์ (7 วัน)", "question_th": "อีธานดื่มน้ำรวมทั้งหมดกี่ลิตร?"}, {"num": 70, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "School", "title": "Hallway Runner Carpet", "story": "The school hallway is 25 meters long. A runner carpet is 18 meters long.", "question": "How much of the hallway is not covered by the carpet?", "ans": "7 meters", "short_ans": "7 m", "equation": "25 - 18 = 7 m", "heuristic": "Length difference: 25 m - 18 m = 7 meters.", "difficulty": "Hard", "choices": ["5 meters", "12 meters", "7 meters", "27 meters"], "title_th": "พรมปูทางเดินในโรงเรียน", "story_th": "ทางเดินยาว 25 เมตร พรมปูทางเดินยาว 18 เมตร", "question_th": "เหลือทางเดินส่วนที่ไม่ได้ปูพรมยาวกี่เมตร?"}, {"num": 71, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "Personal", "title": "Cooking Soup Broth", "story": "Chef Marco makes 12 liters of vegetable broth. He divides the broth equally into 4 large soup pots.", "question": "How many liters of broth are in each pot?", "ans": "3 liters", "short_ans": "3 L", "equation": "12 / 4 = 3 L", "heuristic": "Division of volume: 12 L / 4 = 3 liters per pot.", "difficulty": "Hard", "choices": ["103 liters", "23 liters", "3 liters", "5 liters"], "title_th": "แบ่งน้ำซุปใส่หม้อต้ม", "story_th": "เชฟทำน้ำซุป 12 ลิตร แบ่งใส่หม้อ 4 ใบเท่าๆ กัน", "question_th": "แต่ละหม้อมีน้ำซุปกี่ลิตร?"}, {"num": 72, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "Scientific", "title": "Baby Panda Weight Gain", "story": "A newborn panda cub weighed 150 grams at birth. After one month, it weighs 950 grams.", "question": "How much weight did the panda cub gain?", "ans": "800 grams", "short_ans": "800 g", "equation": "950 - 150 = 800 g", "heuristic": "Mass increase: 950 g - 150 g = 800 grams.", "difficulty": "Hard", "choices": ["798 grams", "800 grams", "790 grams", "820 grams"], "title_th": "น้ำหนักลูกหมีแพนด้า", "story_th": "ลูกหมีแพนด้าแรกเกิดหนัก 150 กรัม หนึ่งเดือนผ่านไปหนัก 950 กรัม", "question_th": "ลูกหมีแพนด้าน้ำหนักเพิ่มขึ้นกี่กรัม?"}, {"num": 73, "unit": 4, "unitTitle": "Length, Mass & Volume (m, cm, kg, g, L)", "pisa": "Personal", "title": "Packing Moving Boxes", "story": "Box A weighs 14 kg. Box B weighs 9 kg less than Box A.", "question": "What is the weight of Box B?", "ans": "5 kg", "short_ans": "5 kg", "equation": "14 - 9 = 5 kg", "heuristic": "Comparison: 14 kg - 9 kg = 5 kg.", "difficulty": "Hard", "choices": ["3 kg", "5 kg", "10 kg", "105 kg"], "title_th": "ชั่งน้ำหนักกล่องพัสดุ", "story_th": "กล่อง ก หนัก 14 กก. กล่อง ข หนักน้อยกว่ากล่อง ก 9 กก.", "question_th": "กล่อง ข หนักกี่กิโลกรัม?"}, {"num": 74, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "Personal", "title": "Pizza Party Slices", "story": "A round pizza is sliced into 4 equal quarters. Tyler eats 1 quarter of the pizza.", "question": "What fraction of the pizza is left for his family?", "ans": "3/4", "short_ans": "3/4", "equation": "1 - 1/4 = 3/4", "heuristic": "Part-Whole with unit fractions: 4/4 - 1/4 = 3/4 remaining.", "difficulty": "Medium", "choices": ["3/4", "5", "23", "1"], "title_th": "แบ่งพิซซ่าในงานปาร์ตี้", "story_th": "พิซซ่าถาดกลมแบ่งเป็น 4 ชิ้นเท่าๆ กัน ไทเลอร์กินไป 1 ชิ้น (หนึ่งในสี่)", "question_th": "เหลือพิซซ่าคิดเป็นเศษส่วนเท่าไรของถาด?"}, {"num": 75, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "Personal", "title": "Birthday Cake Sharing", "story": "A birthday chocolate cake is cut into 8 equal slices. The guests eat 5 slices.", "question": "What fraction of the cake was eaten, and what fraction remains?", "ans": "5/8 eaten, 3/8 remains", "short_ans": "5/8 and 3/8", "equation": "8/8 - 5/8 = 3/8", "heuristic": "Fractions of a whole: Eaten = 5/8, Remaining = 3/8.", "difficulty": "Medium", "choices": ["15 eaten, 3/8 remains", "5/8 eaten, 3/8 remains", "25 eaten, 3/8 remains", "4 eaten, 3/8 remains"], "title_th": "แบ่งเค้กวันเกิด", "story_th": "เค้กช็อกโกแลตแบ่งเป็น 8 ชิ้นเท่าๆ กัน แขกกินไป 5 ชิ้น", "question_th": "เค้กที่ถูกกินและเค้กที่เหลือคิดเป็นเศษส่วนเท่าไร?"}, {"num": 76, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "School", "title": "Ribbon Fraction Folding", "story": "Lily folds a paper strip into 2 equal halves. Then she folds each half in half again.", "question": "How many equal parts does the strip have now, and what is each part called?", "ans": "4 equal parts, called quarters (or one-fourth)", "short_ans": "4 parts (one-fourth)", "equation": "2 x 2 = 4 parts -> 1/4 each", "heuristic": "Partitioning shapes: Halving halves produces quarters (1/4).", "difficulty": "Medium", "choices": ["4 equal parts, called quarters (or one-fourth)", "14 equal parts, called quarters (or one-fourth)", "104 equal parts, called quarters (or one-fourth)", "5 equal parts, called quarters (or one-fourth)"], "title_th": "พับแถบกระดาษ", "story_th": "ลิลลี่พับแถบกระดาษครึ่งหนึ่ง แล้วพับครึ่งอีกครั้ง", "question_th": "กระดาษถูกแบ่งเป็นกี่ส่วนเท่าๆ กัน และแต่ละส่วนเรียกว่าอะไร?"}, {"num": 77, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "Scientific", "title": "Fruit Tart Fractions", "story": "A chef decorates a fruit tart: 1/3 is covered with strawberries, and 2/3 is covered with blueberries.", "question": "Which fruit covers a greater fraction of the tart?", "ans": "Blueberries (2/3 is greater than 1/3)", "short_ans": "Blueberries", "equation": "2/3 > 1/3", "heuristic": "Comparing fractions with the same denominator: 2/3 > 1/3.", "difficulty": "Medium", "choices": ["Blueberries (2/3 is greater than 1/3)", "12 (2/3 is greater than 1/3)", "4 (2/3 is greater than 1/3)", "102 (2/3 is greater than 1/3)"], "title_th": "เศษส่วนหน้าทาร์ตผลไม้", "story_th": "หน้าทาร์ต 1/3 แต่งด้วยสตรอว์เบอร์รี และ 2/3 แต่งด้วยบลูเบอร์รี", "question_th": "ผลไม้ชนิดใดแต่งหน้าทาร์ตเป็นเศษส่วนมากกว่า?"}, {"num": 78, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "School", "title": "Paper Origami Shapes", "story": "Marcus folds a square sheet of paper along its diagonal from corner to corner.", "question": "What two identical shapes are formed by this fold?", "ans": "2 Triangles", "short_ans": "2 Triangles", "equation": "Diagonal of square divides it into 2 right-angled triangles", "heuristic": "Geometric decomposition: A square divided diagonally forms 2 identical triangles.", "difficulty": "Medium", "choices": ["2 Triangles", "1 Triangles", "4 Triangles", "102 Triangles"], "title_th": "พับกระดาษตามแนวทแยง", "story_th": "มาร์คัสพับกระดาษสี่เหลี่ยมจัตุรัสตามแนวทแยงมุม", "question_th": "ได้รูปเรขาคณิตชนิดใดที่เหมือนกัน 2 รูป?"}, {"num": 79, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "Personal", "title": "Building Block Solids", "story": "A child holds a wooden 3D block that has 6 flat square faces, 8 vertices (corners), and 12 straight edges.", "question": "What is the name of this solid shape?", "ans": "Cube", "short_ans": "Cube", "equation": "6 square faces, 8 vertices, 12 edges = Cube", "heuristic": "3D Shape properties: A solid with 6 congruent square faces is a cube.", "difficulty": "Medium", "choices": ["Cube", "Cuboid", "Cone", "Cylinder"], "title_th": "รูปทรงเรขาคณิตสามมิติ", "story_th": "บล็อกไม้มีหน้าตัดเป็นสี่เหลี่ยมจัตุรัส 6 หน้า มี 8 จุดยอด และ 12 ขอบตรง", "question_th": "บล็อกไม้นี้คือรูปทรงเรขาคณิตสามมิติชนิดใด?"}, {"num": 80, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "School", "title": "Classroom Cylinder Search", "story": "The teacher asks students to find 3D objects with 2 flat circular faces and 1 curved surface.", "question": "Name the geometric solid and give one everyday classroom example.", "ans": "Cylinder (e.g., glue stick, tin can, drinking glass)", "short_ans": "Cylinder", "equation": "2 circular faces + 1 curved surface = Cylinder", "heuristic": "3D Shape recognition: Cylinder.", "difficulty": "Hard", "choices": ["Cylinder", "Cube", "Sphere", "Cone"], "title_th": "รูปทรงกระบอกในห้องเรียน", "story_th": "ครูให้นักเรียนหารูปทรงสามมิติที่มีหน้าตัดวงกลมแบน 2 หน้า และผิวโค้ง 1 ผิว", "question_th": "รูปทรงนี้ชื่ออะไร และยกตัวอย่างสิ่งของในห้องเรียน 1 อย่าง?"}, {"num": 81, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "Scientific", "title": "Honeycombs and Hexagons", "story": "A bee honeycomb cell has 6 straight sides and 6 vertices.", "question": "What is the mathematical name of this 2D polygon?", "ans": "Hexagon", "short_ans": "Hexagon", "equation": "6 sides, 6 angles = Hexagon", "heuristic": "2D Polygon classification: 6-sided polygon is a hexagon.", "difficulty": "Hard", "choices": ["Hexagon", "Heptagon", "Pentagon", "Octagon"], "title_th": "รังผึ้งหกเหลี่ยม", "story_th": "ช่องรังผึ้งมีด้านตรง 6 ด้าน และมี 6 จุดยอด", "question_th": "รูปเรขาคณิตสองมิตินี้มีชื่อว่าอะไร?"}, {"num": 82, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "Personal", "title": "Fruit Fraction Snack", "story": "An orange has 10 segments. Noah eats 4 segments.", "question": "What fraction of the orange did Noah eat?", "ans": "4/10 (or 2/5)", "short_ans": "4/10", "equation": "4 out of 10 = 4/10", "heuristic": "Part of a set: 4 out of 10 equal parts = 4/10.", "difficulty": "Hard", "choices": ["9 (or 2/5)", "5 (or 2/5)", "24 (or 2/5)", "4/10 (or 2/5)"], "title_th": "แบ่งส้มกินเป็นของว่าง", "story_th": "ส้ม 1 ผลมี 10 กลีบ โนอาห์กินไป 4 กลีบ", "question_th": "โนอาห์กินส้มไปคิดเป็นเศษส่วนเท่าไรของผล?"}, {"num": 83, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "School", "title": "Traffic Sign Shapes", "story": "A standard STOP road sign has 8 straight sides and 8 corners.", "question": "What is the geometric name of an 8-sided polygon?", "ans": "Octagon", "short_ans": "Octagon", "equation": "8 sides, 8 vertices = Octagon", "heuristic": "2D Polygon classification: 8-sided polygon is an octagon.", "difficulty": "Hard", "choices": ["Octagon", "Pentagon", "Decagon", "Hexagon"], "title_th": "ป้ายหยุดจราจรแปดเหลี่ยม", "story_th": "ป้ายหยุด (STOP) มีด้านตรง 8 ด้าน และ 8 มุม", "question_th": "รูปเรขาคณิตสองมิตินี้ชื่อว่าอะไร?"}, {"num": 84, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "Personal", "title": "Ice Cream Cone Geometry", "story": "An ice cream cone has 1 flat circular face and 1 pointed apex.", "question": "What 3D solid shape is the cone?", "ans": "Cone", "short_ans": "Cone", "equation": "1 circular base + 1 apex = Cone", "heuristic": "3D Shape properties: Cone.", "difficulty": "Hard", "choices": ["Sphere", "Cone", "Pyramid", "Cylinder"], "title_th": "กรวยไอศกรีม", "story_th": "โคนไอศกรีมมีฐานวงกลมแบน 1 ด้าน และมียอดแหลม 1 ยอด", "question_th": "รูปทรงสามมิตินี้คือรูปทรงใด?"}, {"num": 85, "unit": 5, "unitTitle": "Fractions & 2D/3D Geometry", "pisa": "Scientific", "title": "Crystal Pyramid Structure", "story": "A museum display shows a solid with 1 square base and 4 triangular faces meeting at a top vertex.", "question": "What is the geometric name of this 3D solid?", "ans": "Square Pyramid", "short_ans": "Square Pyramid", "equation": "1 square base + 4 triangular faces = Square pyramid", "heuristic": "3D Shape classification: Square pyramid.", "difficulty": "Hard", "choices": ["Cylinder", "Cube", "Triangular Prism", "Square Pyramid"], "title_th": "พีระมิดผลึกแร่", "story_th": "วัตถุจัดแสดงมีฐานเป็นสี่เหลี่ยมจัตุรัส และมีหน้าสามเหลี่ยม 4 หน้ารวมกันที่ยอด", "question_th": "รูปทรงสามมิตินี้ชื่อว่าอะไร?"}, {"num": 86, "unit": 6, "unitTitle": "Time, Money & Scaled Picture Graphs", "pisa": "Personal", "title": "Movie Start and End Time", "story": "An animated movie begins at 3:15 PM and lasts for 1 hour and 30 minutes.", "question": "What time does the movie end?", "ans": "4:45 PM", "short_ans": "4:45 PM", "equation": "3:15 + 1 hr 30 min = 4:45 PM", "heuristic": "Time addition: 3:15 + 1 hour = 4:15; 4:15 + 30 min = 4:45 PM.", "difficulty": "Medium", "choices": ["6 PM", "4:45 PM", "2 PM", "24 PM"], "title_th": "เวลาฉายภาพยนตร์แอนิเมชัน", "story_th": "ภาพยนตร์เริ่มฉายเวลา 15:15 น. (3:15 PM) และฉายยาว 1 ชั่วโมง 30 นาที", "question_th": "ภาพยนตร์จะจบเวลาเท่าไร?"}, {"num": 87, "unit": 6, "unitTitle": "Time, Money & Scaled Picture Graphs", "pisa": "School", "title": "Soccer Practice Duration", "story": "Soccer practice starts at 4:30 PM and finishes at 5:15 PM.", "question": "How many minutes did soccer practice last?", "ans": "45 minutes", "short_ans": "45 min", "equation": "5:15 - 4:30 = 45 min", "heuristic": "Elapsed time: From 4:30 to 5:00 is 30 minutes; from 5:00 to 5:15 is 15 minutes. 30 + 15 = 45 minutes.", "difficulty": "Medium", "choices": ["46 minutes", "45 minutes", "35 minutes", "50 minutes"], "title_th": "ระยะเวลาฝึกซ้อมฟุตบอล", "story_th": "การซ้อมฟุตบอลเริ่มเวลา 16:30 น. (4:30 PM) และเลิกเวลา 17:15 น. (5:15 PM)", "question_th": "การซ้อมฟุตบอลใช้เวลากี่นาที?"}, {"num": 88, "unit": 6, "unitTitle": "Time, Money & Scaled Picture Graphs", "pisa": "Personal", "title": "Pocket Money Dollar Notes", "story": "Brandon has two $20 bills, one $10 bill, and three $5 bills in his wallet.", "question": "What is the total value of Brandon's cash?", "ans": "$65", "short_ans": "$65", "equation": "(2 x 20) + 10 + (3 x 5) = 40 + 10 + 15 = $65", "heuristic": "Money computation: $40 + $10 + $15 = $65.", "difficulty": "Medium", "choices": ["$65", "$165", "$75", "$64"], "title_th": "นับเงินในกระเป๋าสตางค์", "story_th": "แบรนดอนมีธนบัตร 20 ดอลลาร์ 2 ใบ, 10 ดอลลาร์ 1 ใบ และ 5 ดอลลาร์ 3 ใบ", "question_th": "แบรนดอนมีเงินรวมทั้งหมดกี่ดอลลาร์?"}, {"num": 89, "unit": 6, "unitTitle": "Time, Money & Scaled Picture Graphs", "pisa": "School", "title": "School Canteen Snack Cost", "story": "A chicken sandwich costs $3.50 and a fresh orange juice costs $1.80.", "question": "What is the total cost of the sandwich and juice?", "ans": "$5.30", "short_ans": "$5.30", "equation": "$3.50 + $1.80 = $5.30", "heuristic": "Decimal money addition: $3 + $1 = $4; 50c + 80c = $1.30; $4 + $1.30 = $5.30.", "difficulty": "Medium", "choices": ["$7.30", "$5.30", "$4.30", "$6.50"], "title_th": "ซื้ออาหารว่างในโรงอาหาร", "story_th": "แซนด์วิชราคา 3.50 ดอลลาร์ น้ำส้มคั้นราคา 1.80 ดอลลาร์", "question_th": "รวมค่าแซนด์วิชและน้ำส้มเป็นเงินเท่าไร?"}, {"num": 90, "unit": 6, "unitTitle": "Time, Money & Scaled Picture Graphs", "pisa": "Personal", "title": "Toy Purchase and Change", "story": "Clara buys a miniature doll set costing $14.20. She hands a $20 bill to the cashier.", "question": "How much change should Clara receive?", "ans": "$5.80", "short_ans": "$5.80", "equation": "$20.00 - $14.20 = $5.80", "heuristic": "Calculating change: Count up from $14.20: +80c -> $15.00; +$5 -> $20.00. Change = $5.80.", "difficulty": "Medium", "choices": ["$7.00", "$7.80", "$4.80", "$5.80"], "title_th": "ซื้อของเล่นและรับเงินทอน", "story_th": "คลาร่าซื้อตุ๊กตาราคา 14.20 ดอลลาร์ เธอจ่ายธนบัตร 20 ดอลลาร์", "question_th": "คลาร่าจะได้รับเงินทอนกี่ดอลลาร์?"}, {"num": 91, "unit": 6, "unitTitle": "Time, Money & Scaled Picture Graphs", "pisa": "School", "title": "Bookstore Purchase", "story": "A notebook costs $2.40. Gabriel buys 3 identical notebooks.", "question": "How much does Gabriel pay in total?", "ans": "$7.20", "short_ans": "$7.20", "equation": "3 x $2.40 = $7.20", "heuristic": "Multiplying money: 3 x $2.00 = $6.00; 3 x $0.40 = $1.20; Total = $7.20.", "difficulty": "Hard", "choices": ["$6.20", "$8.40", "$9.20", "$7.20"], "title_th": "ซื้อสมุดในร้านเครื่องเขียน", "story_th": "สมุดราคาเล่มละ 2.40 ดอลลาร์ เกเบรียลซื้อสมุดแบบเดียวกัน 3 เล่ม", "question_th": "เกเบรียลต้องจ่ายเงินทั้งหมดเท่าไร?"}, {"num": 92, "unit": 6, "unitTitle": "Time, Money & Scaled Picture Graphs", "pisa": "Scientific", "title": "Scaled Picture Graph: Zoo Visits", "story": "A picture graph shows zoo animal adoptions where each 🐾 symbol represents 4 animals. The panda category has 5 symbols.", "question": "How many pandas were adopted in total?", "ans": "20 pandas", "short_ans": "20 pandas", "equation": "5 x 4 = 20", "heuristic": "Scaled picture graph reading: 5 symbols x 4 animals/symbol = 20 pandas.", "difficulty": "Hard", "choices": ["22 pandas", "30 pandas", "20 pandas", "40 pandas"], "title_th": "แผนภูมิรูปภาพรับเลี้ยงสัตว์", "story_th": "แผนภูมิรูปภาพกำหนดให้สัญลักษณ์รูปอุ้งเท้า 🐾 1 รูป แทนสัตว์ 4 ตัว แพนด้ามี 5 รูป", "question_th": "มีแพนด้าที่ได้รับการรับเลี้ยงทั้งหมดกี่ตัว?"}, {"num": 93, "unit": 6, "unitTitle": "Time, Money & Scaled Picture Graphs", "pisa": "School", "title": "Scaled Graph: Reading Challenge", "story": "In a reading graph, each 📖 symbol stands for 3 books read. Class 2A has 8 symbols and Class 2B has 6 symbols.", "question": "How many more books did Class 2A read than Class 2B?", "ans": "6 books", "short_ans": "6 books", "equation": "(8 - 6) x 3 = 2 x 3 = 6 books", "heuristic": "Difference in scaled symbols: 8 - 6 = 2 symbols. 2 x 3 books/symbol = 6 books.", "difficulty": "Hard", "choices": ["4 books", "1 books", "6 books", "26 books"], "title_th": "แผนภูมิรูปภาพแข่งขันอ่านหนังสือ", "story_th": "กำหนดให้ 📖 1 รูป แทนหนังสือ 3 เล่ม ชั้น ป.2/1 มี 8 รูป ชั้น ป.2/2 มี 6 รูป", "question_th": "ชั้น ป.2/1 อ่านหนังสือมากกว่าชั้น ป.2/2 กี่เล่ม?"}, {"num": 94, "unit": 6, "unitTitle": "Time, Money & Scaled Picture Graphs", "pisa": "Personal", "title": "Morning Routine Clock", "story": "A clock shows the hour hand between 7 and 8, and the minute hand pointing directly at 6.", "question": "What time is shown on the clock face?", "ans": "7:30 (Half past 7)", "short_ans": "7:30", "equation": "Hour = 7, Minute = 6 x 5 = 30", "heuristic": "Telling time to the half hour: 7:30.", "difficulty": "Hard", "choices": ["7:30 (Half past 7)", "8 (Half past 7)", "9 (Half past 7)", "12 (Half past 7)"], "title_th": "ดูเวลานาฬิกาเข็ม", "story_th": "เข็มสั้นอยู่ระหว่างเลข 7 กับเลข 8 และเข็มยาวชี้ตรงเลข 6", "question_th": "หน้าปัดนาฬิกาบอกเวลาเท่าไร?"}, {"num": 95, "unit": 6, "unitTitle": "Time, Money & Scaled Picture Graphs", "pisa": "School", "title": "Scaled Graph: Sports Preferences", "story": "Each ⚽ icon represents 5 children. Swimming has 7 icons and Basketball has 4 icons.", "question": "How many children chose Swimming and Basketball combined?", "ans": "55 children", "short_ans": "55 children", "equation": "(7 + 4) x 5 = 11 x 5 = 55", "heuristic": "Combined categories: (7 + 4) = 11 icons. 11 x 5 = 55 children.", "difficulty": "Hard", "choices": ["75 children", "55 children", "60 children", "56 children"], "title_th": "แผนภูมิรูปภาพความชอบกีฬา", "story_th": "สัญลักษณ์ลูกฟุตบอล ⚽ 1 รูป แทนเด็ก 5 คน ว่ายน้ำมี 7 รูป บาสเกตบอลมี 4 รูป", "question_th": "มีเด็กที่เลือกกีฬาว่ายน้ำและบาสเกตบอลรวมกันกี่คน?"}, {"num": 96, "unit": 7, "unitTitle": "Multi-Step Problem Solving & Non-Routine Challenges", "pisa": "School", "title": "Art Supplies Purchase & Leftover Funds", "story": "The art club has $100. They buy 4 boxes of pastel crayons at $8 each and 5 sketchpads at $6 each.", "question": "How much money does the art club have left after paying for all supplies?", "ans": "$38", "short_ans": "$38", "equation": "Cost = (4x8) + (5x6) = 32 + 30 = $62; Left = 100 - 62 = $38", "heuristic": "Two-step financial model: Step 1 calculate total expenditure ($32 + $30 = $62). Step 2 subtract from total budget: $100 - $62 = $38.", "difficulty": "Hard", "choices": ["$33", "$38", "$37", "$40"], "title_th": "ซื้ออุปกรณ์ศิลปะและคำนวณเงินทอน", "story_th": "ชมรมศิลปะมีเงิน 100 ดอลลาร์ ซื้อสีชอล์ก 4 กล่อง กล่องละ 8 ดอลลาร์ และสมุดวาดภาพ 5 เล่ม เล่มละ 6 ดอลลาร์", "question_th": "ชมรมศิลปะจะเหลือเงินกี่ดอลลาร์?"}, {"num": 97, "unit": 7, "unitTitle": "Multi-Step Problem Solving & Non-Routine Challenges", "pisa": "Personal", "title": "Bakery Muffin Packs & Remainder", "story": "A bakery baked 85 vanilla muffins in the morning. They packed them into gift boxes of 6 muffins each.", "question": "How many full gift boxes did they pack, and how many loose muffins were left over?", "ans": "14 full boxes, with 1 muffin left over", "short_ans": "14 boxes, 1 leftover", "equation": "85 / 6 = 14 R 1 (14 x 6 = 84, 85 - 84 = 1)", "heuristic": "Division with remainder in real-world packaging: 14 boxes of 6 = 84 muffins; 85 - 84 = 1 leftover muffin.", "difficulty": "Hard", "choices": ["114 full boxes, with 1 muffin left over", "15 full boxes, with 1 muffin left over", "24 full boxes, with 1 muffin left over", "14 full boxes, with 1 muffin left over"], "title_th": "แพ็กขนมมัฟฟินและหาเศษที่เหลือ", "story_th": "ร้านเบเกอรี่อบมัฟฟิน 85 ชิ้น แพ็กใส่กล่องของขวัญ กล่องละ 6 ชิ้น", "question_th": "แพ็กได้กี่กล่องเต็ม และเหลือเศษมัฟฟินกี่ชิ้น?"}, {"num": 98, "unit": 7, "unitTitle": "Multi-Step Problem Solving & Non-Routine Challenges", "pisa": "School", "title": "Playground Marble Game (Before and After)", "story": "Marcus and Kevin started with an equal number of marbles. Marcus won 15 marbles from Kevin during recess.", "question": "How many more marbles does Marcus have than Kevin now?", "ans": "30 marbles", "short_ans": "30 marbles", "equation": "Marcus is +15, Kevin is -15; Difference = 15 - (-15) = 30", "heuristic": "Before-and-After Comparison Bar Model: When one entity gains 15 and the other loses 15 from an equal baseline, the gap between them doubles to 15 + 15 = 30.", "difficulty": "Hard", "choices": ["25 marbles", "40 marbles", "30 marbles", "29 marbles"], "title_th": "เกมลูกแก้วในสนามเด็กเล่น", "story_th": "มาร์คัสและเควินเริ่มเกมด้วยจำนวนลูกแก้วที่เท่ากัน ระหว่างเล่น มาร์คัสชนะได้ลูกแก้วจากเควินมา 15 ลูก", "question_th": "ตอนนี้มาร์คัสมีลูกแก้วมากกว่าเควินกี่ลูก?"}, {"num": 99, "unit": 7, "unitTitle": "Multi-Step Problem Solving & Non-Routine Challenges", "pisa": "Personal", "title": "Amusement Park Tickets & Tokens", "story": "Adult tickets cost $10 each and child tickets cost $6 each. The Miller family buys 2 adult tickets and 3 child tickets. They pay with a $50 bill.", "question": "How much change does the family receive?", "ans": "$12", "short_ans": "$12", "equation": "Total cost = (2 x 10) + (3 x 6) = 20 + 18 = $38; Change = 50 - 38 = $12", "heuristic": "Multi-step problem: Step 1 calculate adult cost ($20). Step 2 calculate child cost ($18). Step 3 add total ($38). Step 4 subtract from $50 = $12.", "difficulty": "Hard", "choices": ["$14", "$17", "$7", "$12"], "title_th": "ซื้อตั๋วเครื่องเล่นสวนสนุก", "story_th": "ตั๋วผู้ใหญ่ใบละ 10 ดอลลาร์ ตั๋วเด็กใบละ 6 ดอลลาร์ ครอบครัวซื้อตั๋วผู้ใหญ่ 2 ใบและตั๋วเด็ก 3 ใบ โดยจ่ายธนบัตร 50 ดอลลาร์", "question_th": "ครอบครัวนี้จะได้รับเงินทอนกี่ดอลลาร์?"}, {"num": 100, "unit": 7, "unitTitle": "Multi-Step Problem Solving & Non-Routine Challenges", "pisa": "Scientific", "title": "Ecological Tree Planting Ratio", "story": "Volunteers planted oak trees and maple trees. For every 2 oak trees, they planted 3 maple trees. In total, they planted 40 trees.", "question": "How many maple trees did the volunteers plant?", "ans": "24 maple trees", "short_ans": "24 maples", "equation": "1 set = 2 + 3 = 5 trees; 40 / 5 = 8 sets; Maples = 8 x 3 = 24", "heuristic": "Singapore Math Unit Model: 1 group = 2 units (oaks) + 3 units (maples) = 5 units. 40 / 5 = 8 per unit. Maple trees = 3 x 8 = 24 maple trees.", "difficulty": "Hard", "choices": ["19 maple trees", "24 maple trees", "25 maple trees", "34 maple trees"], "title_th": "อัตราส่วนการปลูกต้นไม้ในระบบนิเวศ", "story_th": "อาสาสมัครปลูกต้นไม้ ทุกๆ ต้นโอ๊ก 2 ต้น จะปลูกต้นเมเปิล 3 ต้น รวมปลูกต้นไม้ทั้งหมด 40 ต้น", "question_th": "อาสาสมัครปลูกต้นเมเปิลไปทั้งหมดกี่ต้น?"}];
+    const STORAGE_KEY = 'math_g2_nephew_state_v1';
+
+    // State Variables
+    let studentName = 'Nephew';
+    let filteredQuestions = ALL_QUESTIONS;
+    let currentFilterUnit = 'all';
+    let currentIndex = 0;
+    let consecutiveCorrect = 0;
+    let score = 0;
+    let answeredQuestions = {};
+    let webhookUrl = '';
+    let isAnswered = false;
+    let soundEnabled = true;
+    let audioCtx = null;
+    let isSpeaking = false;
+    let hintVisible = false;
+
+    // DOM References
+    const displayStudentName = document.getElementById('display-student-name');
+    const btnEditStudent = document.getElementById('btn-edit-student');
+    const studentModal = document.getElementById('student-modal');
+    const inputStudentName = document.getElementById('input-student-name');
+    const btnSaveStudent = document.getElementById('btn-save-student');
+    const btnCancelStudent = document.getElementById('btn-cancel-student');
+
+    const streakIndicator = document.getElementById('streak-indicator');
+    const headerScoreBadge = document.getElementById('header-score-badge');
+    const pisaBadge = document.getElementById('pisa-badge');
+    const unitBadge = document.getElementById('unit-badge');
+    const difficultyBadge = document.getElementById('difficulty-badge');
+    const mascotAvatar = document.getElementById('mascot-avatar');
+    const storyTitle = document.getElementById('story-title');
+    const storyDesc = document.getElementById('story-desc');
+    const thaiStoryText = document.getElementById('thai-story-text');
+    const thaiQuestionText = document.getElementById('thai-question-text');
+    const questionPrompt = document.getElementById('question-prompt');
+    const interactiveArea = document.getElementById('game-interactive-area');
+    const choicesContainer = document.getElementById('choices-container');
+    const hintText = document.getElementById('hint-text');
+    const hintContent = document.getElementById('hint-content');
+    const btnToggleHint = document.getElementById('btn-toggle-hint');
+    const btnNextQuestion = document.getElementById('btn-next-question');
+    const questionSelect = document.getElementById('question-select');
+    const btnPrevQ = document.getElementById('btn-prev-q');
+    const btnNextQ = document.getElementById('btn-next-q');
+    const btnRandomQ = document.getElementById('btn-random-q');
+    
+    // Audio Buttons
+    const btnReadEn = document.getElementById('btn-read-en');
+    const btnReadTh = document.getElementById('btn-read-th');
+    const audioIconEn = document.getElementById('audio-icon-en');
+    const audioTextEn = document.getElementById('audio-text-en');
+    const audioIconTh = document.getElementById('audio-icon-th');
+    const audioTextTh = document.getElementById('audio-text-th');
+    const btnSound = document.getElementById('btn-sound');
+    
+    // Matrix Modal & Google Sheets Integration
+    const btnOpenMatrix = document.getElementById('btn-open-matrix');
+    const matrixModal = document.getElementById('matrix-modal');
+    const btnCloseMatrix = document.getElementById('btn-close-matrix');
+    const btnCloseMatrixFooter = document.getElementById('btn-close-matrix-footer');
+    const btnResetProgress = document.getElementById('btn-reset-progress');
+    const matrixStudentLabel = document.getElementById('matrix-student-label');
+    const matrixScoreVal = document.getElementById('matrix-score-val');
+    const matrixPercentVal = document.getElementById('matrix-percent-val');
+    const matrixTierBadge = document.getElementById('matrix-tier-badge');
+    const matrixAnsweredCount = document.getElementById('matrix-answered-count');
+    const unitBreakdownList = document.getElementById('unit-breakdown-list');
+
+    const btnCopySheetRow = document.getElementById('btn-copy-sheet-row');
+    const btnDownloadCsv = document.getElementById('btn-download-csv');
+    const btnToggleWebhook = document.getElementById('btn-toggle-webhook');
+    const webhookConfigBox = document.getElementById('webhook-config-box');
+    const inputWebhookUrl = document.getElementById('input-webhook-url');
+    const btnSendWebhook = document.getElementById('btn-send-webhook');
+
+    // Mastery Modal
+    const masteryModal = document.getElementById('mastery-modal');
+    const masteryConceptDesc = document.getElementById('mastery-concept-desc');
+    const btnContinueLevel = document.getElementById('btn-continue-level');
+    const btnReplayPractice = document.getElementById('btn-replay-practice');
+
+    // --- STATE PERSISTENCE (localStorage) ---
+    function loadSavedState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const data = JSON.parse(raw);
+          studentName = data.studentName || 'Nephew';
+          score = data.score || 0;
+          consecutiveCorrect = data.consecutiveCorrect || 0;
+          answeredQuestions = data.answeredQuestions || {};
+          webhookUrl = data.webhookUrl || '';
+          if (data.currentIndex !== undefined) currentIndex = data.currentIndex;
+        }
+      } catch (e) {
+        console.warn('localStorage read error', e);
+      }
+      displayStudentName.textContent = studentName;
+      if (inputWebhookUrl) inputWebhookUrl.value = webhookUrl;
+    }
+
+    function saveCurrentState() {
+      try {
+        const data = {
+          studentName: studentName,
+          score: score,
+          consecutiveCorrect: consecutiveCorrect,
+          answeredQuestions: answeredQuestions,
+          webhookUrl: webhookUrl,
+          currentIndex: currentIndex,
+          lastUpdated: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (e) {
+        console.warn('localStorage write error', e);
+      }
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast-msg');
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.remove('opacity-0');
+      t.classList.add('opacity-100');
+      setTimeout(() => {
+        t.classList.remove('opacity-100');
+        t.classList.add('opacity-0');
+      }, 2500);
+    }
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      try {
+        initAudio();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const now = audioCtx.currentTime;
+
+        if (type === 'correct') {
+          [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(f, now + i * 0.08);
+            gain.gain.setValueAtTime(0.25, now + i * 0.08);
+            gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.35);
+            osc.start(now + i * 0.08);
+            osc.stop(now + i * 0.08 + 0.35);
+          });
+        } else if (type === 'tap') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, now);
+          gain.gain.setValueAtTime(0.12, now);
+          gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+          osc.start(now);
+          osc.stop(now + 0.09);
+        } else if (type === 'wrong') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(260, now);
+          osc.frequency.exponentialRampToValueAtTime(190, now + 0.22);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        }
+      } catch (err) {
+        console.warn('Audio error', err);
+      }
+    }
+
+    btnSound.addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      btnSound.textContent = soundEnabled ? '🔊' : '🔇';
+      showToast(soundEnabled ? 'Sound Enabled 🔊' : 'Sound Muted 🔇');
+    });
+
+    // --- STUDENT PROFILE ACTIONS ---
+    btnEditStudent.addEventListener('click', () => {
+      inputStudentName.value = studentName;
+      studentModal.classList.remove('hidden');
+    });
+
+    btnCancelStudent.addEventListener('click', () => {
+      studentModal.classList.add('hidden');
+    });
+
+    btnSaveStudent.addEventListener('click', () => {
+      const val = inputStudentName.value.trim();
+      if (val) {
+        studentName = val;
+        displayStudentName.textContent = studentName;
+        saveCurrentState();
+        studentModal.classList.add('hidden');
+        showToast(`Student profile updated: ${studentName} 👤`);
+      }
+    });
+
+    // --- SPEECH SYNTHESIS ENGINE (ENGLISH & THAI) ---
+    function speakText(text, lang) {
+      if (!('speechSynthesis' in window)) {
+        showToast('Speech synthesis not supported on this browser.');
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = lang;
+      utter.rate = (lang === 'th-TH') ? 0.95 : 0.88;
+      utter.pitch = 1.05;
+
+      const activeBtn = (lang === 'th-TH') ? btnReadTh : btnReadEn;
+      const activeIcon = (lang === 'th-TH') ? audioIconTh : audioIconEn;
+      const activeText = (lang === 'th-TH') ? audioTextTh : audioTextEn;
+      const origText = (lang === 'th-TH') ? 'ฟังภาษาไทย (Thai)' : 'Listen in English';
+      const origIcon = (lang === 'th-TH') ? '🇹🇭' : '🔊';
+
+      utter.onstart = () => {
+        isSpeaking = true;
+        activeBtn.classList.add('speaking-pulse');
+        activeIcon.textContent = '🗣️';
+        activeText.textContent = 'Speaking...';
+      };
+      utter.onend = () => {
+        isSpeaking = false;
+        activeBtn.classList.remove('speaking-pulse');
+        activeIcon.textContent = origIcon;
+        activeText.textContent = origText;
+      };
+      utter.onerror = () => {
+        isSpeaking = false;
+        activeBtn.classList.remove('speaking-pulse');
+        activeIcon.textContent = origIcon;
+        activeText.textContent = origText;
+      };
+
+      window.speechSynthesis.speak(utter);
+    }
+
+    btnReadEn.addEventListener('click', () => {
+      const q = getCurrentQuestion();
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        isSpeaking = false;
+        audioIconEn.textContent = '🔊';
+        audioTextEn.textContent = 'Listen in English';
+      } else {
+        speakText(`${q.title}. ${q.story}. ${q.question}`, 'en-US');
+      }
+    });
+
+    btnReadTh.addEventListener('click', () => {
+      const q = getCurrentQuestion();
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        isSpeaking = false;
+        audioIconTh.textContent = '🇹🇭';
+        audioTextTh.textContent = 'ฟังภาษาไทย (Thai)';
+      } else {
+        speakText(`${q.title_th}. ${q.story_th}. ${q.question_th}`, 'th-TH');
+      }
+    });
+
+    btnToggleHint.addEventListener('click', () => {
+      hintVisible = !hintVisible;
+      if (hintVisible) {
+        hintContent.classList.remove('hidden');
+        btnToggleHint.textContent = 'Hide Hint';
+      } else {
+        hintContent.classList.add('hidden');
+        btnToggleHint.textContent = 'Show Hint';
+      }
+    });
+
+    function populateDropdown() {
+      questionSelect.innerHTML = '';
+      filteredQuestions.forEach((q, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        const status = answeredQuestions[q.num] ? (answeredQuestions[q.num].correct ? '✓ ' : '✗ ') : '';
+        opt.textContent = `${status}Q${q.num}: ${q.title} (${q.unitTitle})`;
+        questionSelect.appendChild(opt);
+      });
+      questionSelect.value = currentIndex;
+    }
+
+    questionSelect.addEventListener('change', (e) => {
+      playSound('tap');
+      currentIndex = parseInt(e.target.value, 10);
+      saveCurrentState();
+      renderQuestion();
+    });
+
+    btnPrevQ.addEventListener('click', () => {
+      if (currentIndex > 0) {
+        playSound('tap');
+        currentIndex--;
+        saveCurrentState();
+        renderQuestion();
+      }
+    });
+
+    btnNextQ.addEventListener('click', () => {
+      if (currentIndex < filteredQuestions.length - 1) {
+        playSound('tap');
+        currentIndex++;
+        saveCurrentState();
+        renderQuestion();
+      }
+    });
+
+    btnRandomQ.addEventListener('click', () => {
+      playSound('tap');
+      currentIndex = Math.floor(Math.random() * filteredQuestions.length);
+      saveCurrentState();
+      renderQuestion();
+    });
+
+    document.querySelectorAll('.unit-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        playSound('tap');
+        const unit = tab.dataset.unit;
+        currentFilterUnit = unit;
+        
+        document.querySelectorAll('.unit-tab').forEach(t => {
+          t.className = 'unit-tab flex-shrink-0 px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-white text-slate-700 border-2 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50';
+        });
+        tab.className = 'unit-tab flex-shrink-0 px-4 py-2 rounded-2xl text-xs sm:text-sm font-black transition-all bg-emerald-600 text-white shadow-md shadow-emerald-300/60';
+
+        if (unit === 'all') {
+          filteredQuestions = ALL_QUESTIONS;
+        } else {
+          const uNum = parseInt(unit, 10);
+          filteredQuestions = ALL_QUESTIONS.filter(q => q.unit === uNum);
+        }
+        currentIndex = 0;
+        populateDropdown();
+        renderQuestion();
+      });
+    });
+
+    function getCurrentQuestion() {
+      return filteredQuestions[currentIndex] || ALL_QUESTIONS[0];
+    }
+
+    function renderQuestion() {
+      if (isSpeaking) {
+        window.speechSynthesis.cancel();
+      }
+      isAnswered = false;
+      hintVisible = false;
+      hintContent.classList.add('hidden');
+      btnToggleHint.textContent = 'Show Hint';
+      btnNextQuestion.classList.add('hidden');
+      streakIndicator.textContent = `${consecutiveCorrect}/3`;
+      headerScoreBadge.textContent = `${score}/100`;
+
+      const q = getCurrentQuestion();
+      questionSelect.value = currentIndex;
+
+      pisaBadge.textContent = `PISA: ${q.pisa} Context`;
+      unitBadge.textContent = `Q${q.num} of 100 • ${q.unitTitle}`;
+      difficultyBadge.textContent = q.difficulty || 'Grade 2';
+
+      storyTitle.textContent = q.title;
+      storyDesc.textContent = q.story;
+      thaiStoryText.textContent = q.story_th;
+      thaiQuestionText.textContent = `คำถาม: ${q.question_th}`;
+      questionPrompt.textContent = `Question: ${q.question}`;
+      
+      hintText.textContent = q.heuristic.split('=')[0] + '... (Apply this concept to solve)';
+
+      interactiveArea.innerHTML = '';
+      renderCleanVisualManipulative(q);
+
+      choicesContainer.innerHTML = '';
+      q.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn btn-3d bg-white hover:bg-emerald-50 active:bg-emerald-100 border-3 border-emerald-200 hover:border-emerald-400 rounded-2xl py-3.5 px-4 text-lg sm:text-xl font-black text-slate-800 font-game transition flex items-center justify-center text-center';
+        btn.textContent = choice;
+
+        // If previously answered in state
+        if (answeredQuestions[q.num]) {
+          const prev = answeredQuestions[q.num];
+          if (choice.trim() === q.ans.trim() || (q.short_ans && choice.includes(q.short_ans))) {
+            btn.classList.add('bg-emerald-100', 'border-emerald-400', 'text-emerald-950');
+          } else if (prev.chosen === choice && !prev.correct) {
+            btn.classList.add('bg-rose-500', 'text-white', 'border-rose-600');
+          }
+        }
+
+        btn.addEventListener('click', () => handleChoice(choice, btn));
+        choicesContainer.appendChild(btn);
+      });
+
+      if (answeredQuestions[q.num]) {
+        btnNextQuestion.classList.remove('hidden');
+      }
+    }
+
+    function renderCleanVisualManipulative(q) {
+      const container = document.createElement('div');
+      container.className = 'w-full max-w-lg flex flex-col items-center gap-3 p-2';
+
+      if (q.unit === 1) {
+        container.innerHTML = `
+          <div class="bg-gradient-to-r from-emerald-50 to-teal-50 border-3 border-emerald-200 rounded-3xl p-4 w-full text-center shadow-inner">
+            <div class="text-xs font-black text-emerald-950 uppercase tracking-widest mb-2">Place Value Model (H • T • O)</div>
+            <div class="grid grid-cols-3 gap-2">
+              <div class="bg-white border-2 border-emerald-300 rounded-2xl p-2.5 flex flex-col items-center">
+                <span class="text-xs font-black text-emerald-800">Hundreds [100]</span>
+                <span class="text-2xl mt-1">🟢 🟢 🟢</span>
+              </div>
+              <div class="bg-white border-2 border-teal-300 rounded-2xl p-2.5 flex flex-col items-center">
+                <span class="text-xs font-black text-teal-800">Tens [10]</span>
+                <span class="text-2xl mt-1">🔵 🔵 🔵 🔵</span>
+              </div>
+              <div class="bg-white border-2 border-amber-300 rounded-2xl p-2.5 flex flex-col items-center">
+                <span class="text-xs font-black text-amber-800">Ones [1]</span>
+                <span class="text-2xl mt-1">🟡 🟡 🟡 🟡</span>
+              </div>
+            </div>
+            <div class="mt-2 text-xs font-bold text-slate-500">Think: Combine the hundreds, tens, and ones together.</div>
+          </div>
+        `;
+      } else if (q.unit === 2) {
+        container.innerHTML = `
+          <div class="bg-slate-50 border-3 border-emerald-200 rounded-3xl p-4 w-full shadow-inner">
+            <div class="text-xs font-black text-slate-700 uppercase tracking-wider text-center mb-2">Singapore Bar Model Representation</div>
+            <div class="w-full bg-white rounded-2xl h-14 p-1.5 border-2 border-slate-200 flex gap-2 shadow-sm">
+              <div class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs sm:text-sm font-black rounded-xl flex items-center justify-center flex-1">
+                Part A
+              </div>
+              <div class="bg-amber-100 border-2 border-dashed border-amber-400 text-amber-900 text-xs sm:text-sm font-black rounded-xl flex items-center justify-center flex-1 animate-pulse">
+                Part B (?)
+              </div>
+            </div>
+            <div class="mt-2 text-center text-xs font-bold text-slate-500">Solve for the unknown bar to find the answer.</div>
+          </div>
+        `;
+      } else if (q.unit === 3) {
+        container.innerHTML = `
+          <div class="bg-indigo-50/70 border-3 border-indigo-200 rounded-3xl p-4 w-full text-center shadow-inner">
+            <div class="text-xs font-black text-indigo-950 uppercase tracking-widest mb-2">Equal Groups &amp; Arrays</div>
+            <div class="text-3xl tracking-widest py-2 bubble-float">
+              📦 📦 📦 📦 &nbsp; | &nbsp; 📦 📦 📦 📦
+            </div>
+            <div class="text-xs font-bold text-indigo-900 mt-1">Think: How many equal groups? How many in each group?</div>
+          </div>
+        `;
+      } else if (q.unit === 4) {
+        container.innerHTML = `
+          <div class="bg-amber-50/70 border-3 border-amber-200 rounded-3xl p-4 w-full text-center shadow-inner">
+            <div class="text-xs font-black text-amber-950 uppercase tracking-widest mb-2">Metric Units (m, cm, kg, g, L)</div>
+            <div class="flex items-center justify-center gap-4 text-3xl py-2">
+              <span>📏</span> <span>⚖️</span> <span>🧴</span>
+            </div>
+            <div class="text-xs font-bold text-amber-900">Standard Conversion Reminder: 1 m = 100 cm | 1 kg = 1,000 g</div>
+          </div>
+        `;
+      } else if (q.unit === 5) {
+        container.innerHTML = `
+          <div class="bg-rose-50/70 border-3 border-rose-200 rounded-3xl p-4 w-full text-center shadow-inner">
+            <div class="text-xs font-black text-rose-950 uppercase tracking-widest mb-2">Fractions &amp; Shapes Model</div>
+            <div class="flex items-center justify-center gap-4 text-3xl py-2">
+              <span>🍕</span> <span>🍰</span> <span>🔺</span> <span>🟦</span> <span>🧊</span>
+            </div>
+            <div class="text-xs font-bold text-rose-900">Count the total equal parts and the shaded/eaten parts.</div>
+          </div>
+        `;
+      } else if (q.unit === 6) {
+        container.innerHTML = `
+          <div class="bg-blue-50/70 border-3 border-blue-200 rounded-3xl p-4 w-full text-center shadow-inner">
+            <div class="text-xs font-black text-blue-950 uppercase tracking-widest mb-2">Time, Money &amp; Data Reading</div>
+            <div class="flex items-center justify-center gap-4 text-3xl py-2">
+              <span>⏰</span> <span>💵</span> <span>🪙</span> <span>📊</span>
+            </div>
+            <div class="text-xs font-bold text-blue-900">Check the value of each clock hand or graph symbol.</div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = `
+          <div class="bg-purple-50/70 border-3 border-purple-200 rounded-3xl p-4 w-full text-center shadow-inner">
+            <div class="text-xs font-black text-purple-950 uppercase tracking-widest mb-2">Multi-Step Real World Challenge</div>
+            <div class="flex items-center justify-center gap-3 text-3xl py-2">
+              <span>Step 1 ➔</span> <span>Step 2 ➔</span> <span>Answer 🎯</span>
+            </div>
+            <div class="text-xs font-bold text-purple-900">Break the problem down into two simple steps.</div>
+          </div>
+        `;
+      }
+
+      interactiveArea.appendChild(container);
+    }
+
+    function handleChoice(chosen, btnElement) {
+      if (isAnswered) return;
+      isAnswered = true;
+
+      const q = getCurrentQuestion();
+      const allButtons = choicesContainer.querySelectorAll('.choice-btn');
+
+      const isCorrect = (chosen.trim() === q.ans.trim()) || 
+        (q.short_ans && chosen.includes(q.short_ans)) ||
+        (chosen.replace(/[^0-9]/g, '') === q.ans.replace(/[^0-9]/g, ''));
+
+      answeredQuestions[q.num] = {
+        correct: isCorrect,
+        chosen: chosen,
+        unit: q.unit,
+        timestamp: new Date().toLocaleTimeString()
+      };
+
+      if (isCorrect) {
+        playSound('correct');
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 50,
+            spread: 70,
+            origin: { y: 0.65 }
+          });
+        }
+
+        btnElement.classList.remove('bg-white', 'border-emerald-200');
+        btnElement.classList.add('bg-gradient-to-r', 'from-emerald-500', 'to-teal-500', 'text-white', 'border-emerald-600', 'scale-105');
+
+        score = Object.values(answeredQuestions).filter(a => a.correct).length;
+        consecutiveCorrect += 1;
+        streakIndicator.textContent = `${consecutiveCorrect}/3`;
+        headerScoreBadge.textContent = `${score}/100`;
+
+        saveCurrentState();
+
+        if (consecutiveCorrect >= 3) {
+          setTimeout(() => {
+            triggerMasteryCelebration(q);
+          }, 450);
+          return;
+        }
+
+      } else {
+        playSound('wrong');
+        btnElement.classList.remove('bg-white', 'border-emerald-200');
+        btnElement.classList.add('bg-rose-500', 'text-white', 'border-rose-600');
+
+        consecutiveCorrect = 0;
+        streakIndicator.textContent = `${consecutiveCorrect}/3`;
+
+        allButtons.forEach(b => {
+          if (b.textContent.trim() === q.ans.trim() || b.textContent.includes(q.short_ans)) {
+            b.classList.add('bg-emerald-100', 'border-emerald-400', 'text-emerald-950');
+          }
+        });
+
+        saveCurrentState();
+      }
+
+      // Show equation & explanation ONLY AFTER submission
+      hintContent.classList.remove('hidden');
+      hintText.innerHTML = `<strong>Equation:</strong> ${q.equation} &nbsp;|&nbsp; <strong>Method:</strong> ${q.heuristic}`;
+      btnToggleHint.textContent = 'Hide Explanation';
+      hintVisible = true;
+
+      populateDropdown();
+      btnNextQuestion.classList.remove('hidden');
+    }
+
+    btnNextQuestion.addEventListener('click', () => {
+      playSound('tap');
+      if (currentIndex < filteredQuestions.length - 1) {
+        currentIndex++;
+      } else {
+        currentIndex = 0;
+      }
+      saveCurrentState();
+      renderQuestion();
+    });
+
+    function triggerMasteryCelebration(questionData) {
+      playSound('correct');
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 120,
+          spread: 90,
+          origin: { y: 0.5 }
+        });
+      }
+
+      masteryConceptDesc.innerHTML = `
+        <strong>• Verified Competency:</strong> ${questionData.heuristic.split('=')[0]}<br>
+        <strong>• Nephew Assessment:</strong> Solid understanding demonstrated across 3 consecutive questions!
+      `;
+      masteryModal.classList.remove('hidden');
+    }
+
+    btnContinueLevel.addEventListener('click', () => {
+      playSound('tap');
+      masteryModal.classList.add('hidden');
+      consecutiveCorrect = 0;
+      if (currentIndex < filteredQuestions.length - 1) {
+        currentIndex++;
+      }
+      saveCurrentState();
+      renderQuestion();
+    });
+
+    btnReplayPractice.addEventListener('click', () => {
+      playSound('tap');
+      masteryModal.classList.add('hidden');
+      consecutiveCorrect = 0;
+      saveCurrentState();
+      renderQuestion();
+    });
+
+    // --- GOOGLE SHEETS EXPORT HELPERS ---
+    function computeDiagnosticData() {
+      const totalAnswered = Object.keys(answeredQuestions).length;
+      const totalCorrect = Object.values(answeredQuestions).filter(a => a.correct).length;
+      const percentage = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+
+      let tier = 'Pending Diagnostic';
+      let reco = 'Continue answering questions to evaluate proficiency.';
+      if (totalAnswered > 0) {
+        if (percentage >= 90) {
+          tier = 'Advanced Mastery';
+          reco = 'Exempt from drills; advance to Grade 3 Bar Models.';
+        } else if (percentage >= 75) {
+          tier = 'Proficient (Ready)';
+          reco = 'Targeted review only on missed heuristic types.';
+        } else if (percentage >= 60) {
+          tier = 'Developing';
+          reco = 'Revisit Pictorial phase before number calculation.';
+        } else {
+          tier = 'Foundational Review';
+          reco = 'Reinforce Grade 1 Number Bonds & Ten-Frames first.';
+        }
+      }
+
+      // Unit scores
+      const unitScores = [];
+      for (let u = 1; u <= 7; u++) {
+        const uQuestions = ALL_QUESTIONS.filter(q => q.unit === u);
+        let uCorrect = 0;
+        let uAttempted = 0;
+        uQuestions.forEach(q => {
+          if (answeredQuestions[q.num]) {
+            uAttempted++;
+            if (answeredQuestions[q.num].correct) uCorrect++;
+          }
+        });
+        unitScores.push(`${uCorrect}/${uAttempted}`);
+      }
+
+      const timestamp = new Date().toLocaleString('en-US');
+
+      return {
+        timestamp,
+        studentName,
+        grade: 'Grade 2',
+        score: totalCorrect,
+        totalAnswered,
+        percentage: `${percentage}%`,
+        tier,
+        unitScores,
+        reco
+      };
+    }
+
+    // 1. Copy Tab-Delimited row for Google Sheets (Ctrl+V into Sheet)
+    btnCopySheetRow.addEventListener('click', () => {
+      const d = computeDiagnosticData();
+      // Tab-separated values line matches the Google Sheet header:
+      // Timestamp 	 Student Name 	 Grade 	 Total Score 	 Accuracy 	 Tier 	 U1 	 U2 	 U3 	 U4 	 U5 	 U6 	 U7 	 Reco
+      const tsvRow = `${d.timestamp}\t${d.studentName}\t${d.grade}\t${d.score}\t${d.percentage}\t${d.tier}\t${d.unitScores.join('\t')}\t${d.reco}`;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(tsvRow).then(() => {
+          showToast(`Copied row for ${d.studentName}! Paste into Google Sheet (Ctrl+V)`);
+        }).catch(() => {
+          fallbackCopyText(tsvRow);
+        });
+      } else {
+        fallbackCopyText(tsvRow);
+      }
+    });
+
+    function fallbackCopyText(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Copied row! Paste into Google Sheet with Ctrl+V');
+      } catch (e) {
+        showToast('Clipboard copy failed. Please download CSV instead.');
+      }
+      document.body.removeChild(ta);
+    }
+
+    // 2. Download CSV for Google Sheets
+    btnDownloadCsv.addEventListener('click', () => {
+      const d = computeDiagnosticData();
+      const headers = ['Timestamp', 'Student Name', 'Grade', 'Total Score (out of 100)', 'Accuracy %', 'Mastery Tier', 'Unit 1 (Place Value)', 'Unit 2 (Add/Sub)', 'Unit 3 (Mult/Div)', 'Unit 4 (Measurement)', 'Unit 5 (Fractions/Shapes)', 'Unit 6 (Time/Money)', 'Unit 7 (Multi-Step)', 'Diagnostic Recommendation'];
+      const row = [d.timestamp, d.studentName, d.grade, d.score, d.percentage, d.tier, ...d.unitScores, d.reco];
+      
+      const csvContent = "data:text/csv;charset=utf-8," + 
+        headers.map(h => `"${h}"`).join(",") + "\n" +
+        row.map(r => `"${r}"`).join(",");
+      
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Grade2_Assessment_${d.studentName.replace(/\s+/g, '_')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('CSV downloaded for Google Sheets import 📥');
+    });
+
+    // 3. Webhook Sync
+    btnToggleWebhook.addEventListener('click', () => {
+      webhookConfigBox.classList.toggle('hidden');
+    });
+
+    btnSendWebhook.addEventListener('click', () => {
+      const url = inputWebhookUrl.value.trim();
+      if (!url) {
+        showToast('Please enter your Google Apps Script Webhook URL');
+        return;
+      }
+      webhookUrl = url;
+      saveCurrentState();
+
+      const d = computeDiagnosticData();
+      fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(d)
+      }).then(() => {
+        showToast(`Sent ${studentName}'s results to Google Sheet Webhook 🚀`);
+      }).catch(err => {
+        showToast('Webhook sync error: ' + err.message);
+      });
+    });
+
+    // Update Matrix Modal View
+    function updateMatrixModalView() {
+      const totalAnswered = Object.keys(answeredQuestions).length;
+      const totalCorrect = Object.values(answeredQuestions).filter(a => a.correct).length;
+      const percentage = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;
+
+      matrixStudentLabel.textContent = studentName;
+      matrixScoreVal.textContent = totalCorrect;
+      matrixPercentVal.textContent = `(${percentage}% Accuracy)`;
+      matrixAnsweredCount.textContent = `${totalAnswered} / 100`;
+
+      if (totalAnswered === 0) {
+        matrixTierBadge.textContent = 'Ready to Start Diagnostic';
+        matrixTierBadge.className = 'px-3.5 py-1 rounded-full text-xs sm:text-sm font-black bg-slate-100 text-slate-700 border border-slate-300';
+      } else if (percentage >= 90) {
+        matrixTierBadge.textContent = '🏆 Advanced Mastery (Grade 3 Ready)';
+        matrixTierBadge.className = 'px-3.5 py-1 rounded-full text-xs sm:text-sm font-black bg-emerald-100 text-emerald-800 border border-emerald-300';
+      } else if (percentage >= 75) {
+        matrixTierBadge.textContent = '🌟 Proficient (Grade-Ready)';
+        matrixTierBadge.className = 'px-3.5 py-1 rounded-full text-xs sm:text-sm font-black bg-blue-100 text-blue-800 border border-blue-300';
+      } else if (percentage >= 60) {
+        matrixTierBadge.textContent = '📘 Developing Competence';
+        matrixTierBadge.className = 'px-3.5 py-1 rounded-full text-xs sm:text-sm font-black bg-amber-100 text-amber-800 border border-amber-300';
+      } else {
+        matrixTierBadge.textContent = '🎯 Foundational Review Needed';
+        matrixTierBadge.className = 'px-3.5 py-1 rounded-full text-xs sm:text-sm font-black bg-rose-100 text-rose-800 border border-rose-300';
+      }
+
+      unitBreakdownList.innerHTML = '';
+      for (let u = 1; u <= 7; u++) {
+        const uQuestions = ALL_QUESTIONS.filter(q => q.unit === u);
+        const uTotal = uQuestions.length;
+        let uCorrect = 0;
+        let uAttempted = 0;
+
+        uQuestions.forEach(q => {
+          if (answeredQuestions[q.num]) {
+            uAttempted++;
+            if (answeredQuestions[q.num].correct) uCorrect++;
+          }
+        });
+
+        const uPercent = uAttempted > 0 ? Math.round((uCorrect / uAttempted) * 100) : 0;
+        const card = document.createElement('div');
+        card.className = 'p-2.5 rounded-xl border-2 border-slate-200 bg-slate-50 flex items-center justify-between';
+        card.innerHTML = `
+          <div>
+            <div class="font-bold text-slate-800">${uQuestions[0].unitTitle}</div>
+            <div class="text-[11px] text-slate-500 font-semibold">${uCorrect} / ${uAttempted} correct (${uTotal} total)</div>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-black px-2 py-0.5 rounded-full ${uAttempted === 0 ? 'bg-slate-200 text-slate-600' : (uPercent >= 75 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800')}">
+              ${uAttempted === 0 ? 'Not Started' : uPercent + '%'}
+            </span>
+          </div>
+        `;
+        unitBreakdownList.appendChild(card);
+      }
+    }
+
+    btnOpenMatrix.addEventListener('click', () => {
+      playSound('tap');
+      updateMatrixModalView();
+      matrixModal.classList.remove('hidden');
+    });
+
+    btnCloseMatrix.addEventListener('click', () => {
+      playSound('tap');
+      matrixModal.classList.add('hidden');
+    });
+
+    btnCloseMatrixFooter.addEventListener('click', () => {
+      playSound('tap');
+      matrixModal.classList.add('hidden');
+    });
+
+    btnResetProgress.addEventListener('click', () => {
+      answeredQuestions = {};
+      score = 0;
+      consecutiveCorrect = 0;
+      streakIndicator.textContent = '0/3';
+      headerScoreBadge.textContent = '0/100';
+      saveCurrentState();
+      updateMatrixModalView();
+      populateDropdown();
+      renderQuestion();
+      showToast('Assessment progress has been reset 🔄');
+    });
+
+    // Initialize State on Load
+    window.addEventListener('load', () => {
+      loadSavedState();
+      populateDropdown();
+      renderQuestion();
+    });
+  </script>
+</body>
+</html>
